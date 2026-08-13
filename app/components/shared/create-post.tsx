@@ -18,13 +18,13 @@ export default function CreatePost() {
       <div className="p-5">
         <div className="flex gap-3">
           <Avatar className="h-11 w-11">
-            <AvatarFallback className="bg-emerald-100 text-emerald-700">
+            <AvatarFallback className="text-thover">
               CS
             </AvatarFallback>
           </Avatar>
 
           <div className="flex-1">
-            <button className="w-full rounded-2xl bg-slate-50 px-4 py-3 text-left text-sm text-slate-400 transition hover:bg-slate-100">
+            <button className="w-full rounded-2xl bg-slate-50 px-4 py-3 text-left text-sm text-slate-400 transition hover:bg-thover/20">
               What did you catch today?
             </button>
           </div>
@@ -34,7 +34,7 @@ export default function CreatePost() {
           <Button
             variant="ghost"
             size="sm"
-            className="gap-2 rounded-xl text-slate-500"
+            className="gap-2 rounded-xl text-slate-500 hover:bg-primary-hover/20"
           >
             <ImagePlus size={17} />
             Photo
@@ -43,7 +43,7 @@ export default function CreatePost() {
           <Button
             variant="ghost"
             size="sm"
-            className="gap-2 rounded-xl text-slate-500"
+            className="gap-2 rounded-xl text-slate-500 hover:bg-primary-hover/20"
           >
             <MapPin size={17} />
             Location
@@ -52,14 +52,14 @@ export default function CreatePost() {
           <Button
             variant="ghost"
             size="sm"
-            className="gap-2 rounded-xl text-slate-500"
+            className="gap-2 rounded-xl text-slate-500 hover:bg-primary-hover/20"
           >
             <Fish size={17} />
             Catch
           </Button>
 
           <div className="ml-auto">
-            <Button className="gap-2 rounded-xl bg-emerald-600 px-5 hover:bg-emerald-700">
+            <Button className="gap-2 rounded-xl bg-primary px-5 hover:bg-primary-hover">
               Post
               <Send size={15} />
             </Button>

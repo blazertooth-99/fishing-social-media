@@ -46,26 +46,56 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+
+  /* Custom Fishing Social Media palette */
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-link: var(--link);
+  --color-navigation: var(--navigation);
+  --color-card-section: var(--card-section);
+  --color-icon: var(--icon);
+  --color-thover: var(--thover);
+  --color-tactive: var(--tactive);
+  --color-tinactive: var(--tinactive);
+
 }
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
+  /* Background — Soft Mint */
+  --background: #F5F9F7;
+  /* Text — Dark Navy */
+  --foreground: #172B2A;
+  /* Card — White */
+  --card: #FFFFFF;
+  --card-foreground: #172B2A;
+  --popover: #FFFFFF;
+  --popover-foreground: #172B2A;
+  /* Button — Deep Blue */
+  --primary: #123C50;
+
+  /* Button Hover — Dark Blue */
+  --primary-hover: #587685;
+  --link: #16708C;
+  --navigation: #FFFFFF;
+  --card-section: #E5F9FF;
+  --icon: #9eeaff;
+
+  /*text sidebar */
+  --tactive: #3ba7ff;
+  --tinactive: #7a7a7a;
+  --thover: #87c5ff;
+
+  --primary-foreground: #FFFFFF;
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
   --muted: oklch(0.97 0 0);
   --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
+  --accent: #E5F9FF;
+  --accent-foreground: #172B2A;
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
+  /* Border — Light Green Gray */
+  --border: #D6E2E7;
+  --input: #D6E2E7;
   --ring: oklch(0.708 0 0);
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
@@ -121,17 +151,59 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     margin: 0;
-    background: #f5f7f4;
-    color: #0f172a;
+    background: var(--background);
+    color: var(--foreground);
   }
+
   html {
-    @apply font-sans;
     scroll-behavior: smooth;
   }
+
   ::selection {
     background: #a7f3d0;
     color: #064e3b;
+  }
+}
+
+@layer components {
+
+  /* button */
+  .btn-primary {
+    @apply bg-primary text-white;
+    @apply hover:bg-primary-hover;
+    @apply rounded-lg px-4 py-2;
+    @apply font-medium;
+    @apply transition-colors duration-200;
+  }
+
+  /* Link */
+
+  .link {
+    @apply text-link;
+    @apply hover:text-accent;
+    @apply transition-colors duration-200;
+  }
+
+  /* Card */
+
+  .card {
+    @apply bg-card border border-border;
+    @apply rounded-xl;
+    @apply shadow-sm;
+  }
+
+  .card-section {
+    @apply bg-card-section;
+    @apply rounded-lg;
+  }
+
+  /* Navigation */
+
+  .navigation {
+    @apply bg-navigation;
+    @apply border-b border-border;
   }
 }
