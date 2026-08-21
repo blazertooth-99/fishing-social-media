@@ -89,3 +89,15 @@ export interface FishingPostDataFeed {
   post: FishingPostProps;
   variant?: "desktop" | "mobile";
 }
+
+export const profileData = {
+  name: "Christian Angler",
+  username: "@christianangler",
+  bio: "Chasing fish, finding spots, and sharing the stories 🎣",
+  followers: 33,
+  following: 11,
+
+  avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde",
+
+  cover: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e",
+};
