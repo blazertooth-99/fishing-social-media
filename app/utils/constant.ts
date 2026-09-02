@@ -101,3 +101,42 @@ export const profileData = {
 
   cover: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e",
 };
+
+//Model Data Post
+
+export interface FishingPostDraft {
+  content: string;
+
+  location?: string;
+  fish?: string;
+  technique?: string;
+  weight?: string;
+
+  weather?: string;
+  waterCondition?: string;
+
+  lure?: string;
+
+  media?: {
+    type: "image" | "video";
+    url: string;
+  }[];
+}
+
+//dummy
+export const fishingPostDraft: FishingPostDraft = {
+  content:
+    "Hari ini strike cukup brutal. Setelah hampir 30 menit casting akhirnya dapat snakehead ini. Worth the wait! 🎣",
+
+  location: "Waduk Gajah Mungkur",
+  fish: "Snakehead",
+  technique: "Casting",
+  weight: "1.8 kg",
+
+  weather: "Cloudy",
+  waterCondition: "Slightly muddy",
+
+  lure: "Frog",
+
+  media: [],
+};

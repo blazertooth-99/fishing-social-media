@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  Camera,
-  Fish,
-  ImagePlus,
-  MapPin,
-  Send,
-} from "lucide-react";
+import { Camera, Fish, ImagePlus, MapPin, Send } from "lucide-react";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -18,9 +12,7 @@ export default function CreatePost() {
       <div className="p-5">
         <div className="flex gap-3">
           <Avatar className="h-11 w-11">
-            <AvatarFallback className="text-thover">
-              CS
-            </AvatarFallback>
+            <AvatarFallback className="text-thover">CS</AvatarFallback>
           </Avatar>
 
           <div className="flex-1">
