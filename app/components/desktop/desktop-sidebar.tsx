@@ -15,6 +15,8 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import Logo from "@/assets/image/logo/logo_black_500px.png";
 import Image from "next/image";
+import { LogOut } from "lucide-react";
+// import { useAuth } from "@/hooks/use-auth";
 
 const menu = [
   {
@@ -43,6 +45,7 @@ const menu = [
     icon: UserRound,
   },
 ];
+// const { logout } = useAuth();
 
 const Sidebar = () => {
   return (
@@ -147,6 +150,13 @@ const Sidebar = () => {
             <p className="truncate text-xs text-slate-400 group-hover:text-thover">
               @LanceaFishing
             </p>
+            {/* <button
+              onClick={logout}
+              className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm text-slate-500 transition-colors hover:bg-red-50 hover:text-red-600"
+            >
+              <LogOut size={19} />
+              Sign out
+            </button> */}
           </div>
         </div>
       </div>
