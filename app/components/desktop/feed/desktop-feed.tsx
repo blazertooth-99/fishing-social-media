@@ -1,6 +1,6 @@
-import DesktopSidebar from "./desktop-sidebar";
-import DesktopRightSidebar from "./desktop-right-sidebar";
-import DesktopFishingPost from "./desktop-fishing-post";
+import DesktopSidebar from "../desktop-sidebar";
+import DesktopRightSidebar from "../desktop-right-sidebar";
+import DesktopFishingPost from "../desktop-fishing-post";
 import { fishingPostProps } from "@/app/utils/constant";
 
 import CreatePost from "@/app/components/shared/post/create-post";

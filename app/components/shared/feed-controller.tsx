@@ -1,9 +1,9 @@
 "use client";
 
-import DesktopLayout from "@/app/components/desktop/desktop-layout";
-import MobileLayout from "@/app/components/mobile/mobile-layout";
+import DesktopLayout from "@/app/components/desktop/feed/desktop-feed";
+import MobileLayout from "@/app/components/mobile/feed/mobile-feed";
 
-export default function FishingController() {
+export default function FeedController() {
   return (
     <>
       {/* DESKTOP */}

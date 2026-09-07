@@ -1,6 +1,6 @@
-import MobileHeader from "./mobile-header";
-import MobileBottomNav from "./mobile-bottom-nav";
-import MobileFishingPost from "./mobile-fishing-post";
+import MobileHeader from "../mobile-header";
+import MobileBottomNav from "../mobile-bottom-nav";
+import MobileFishingPost from "../mobile-fishing-post";
 import { fishingPostProps } from "@/app/utils/constant";
 
 export default function MobileLayout() {

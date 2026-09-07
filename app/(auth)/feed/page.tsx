@@ -1,5 +1,11 @@
-import FishingController from "@/app/components/shared/controller";
+import FeedController from "@/app/components/shared/feed-controller";
+// import { requireAuth } from "@/lib/auth/guards";
 
-export default function FeedPage() {
-  return <FishingController />;
+export default async function FeedPage() {
+  // const user = await requireAuth();
+
+  return (
+    // <FeedController user={user} />;
+    <FeedController />
+  );
 }

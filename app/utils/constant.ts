@@ -5,6 +5,20 @@ import Post1 from "@/assets/image/feed/post1.jpg";
 import Post2 from "@/assets/image/feed/post2.jpg";
 import Post3 from "@/assets/image/feed/post3.jpg";
 
+/* Side Bar logo */
+import {
+  Compass,
+  Fish,
+  Home,
+  MapPinned,
+  MessageCircle,
+  Settings,
+  Users,
+  UserRound,
+  LucideIcon,
+} from "lucide-react";
+import { Icon } from "next/dist/lib/metadata/types/metadata-types";
+
 export interface NavLink {
   name: string;
   href: string;
@@ -140,3 +154,37 @@ export const fishingPostDraft: FishingPostDraft = {
 
   media: [],
 };
+
+export interface MenuFeed {
+  label: string;
+  icon: LucideIcon;
+  link: string;
+}
+
+export const menuFeed: MenuFeed[] = [
+  {
+    label: "Home",
+    icon: Home,
+    link: "#",
+  },
+  {
+    label: "Explore",
+    icon: Compass,
+    link: "/explore",
+  },
+  {
+    label: "Fishing Spots",
+    icon: MapPinned,
+    link: "/fishing-spots",
+  },
+  {
+    label: "Community",
+    icon: Users,
+    link: "/community",
+  },
+  {
+    label: "My Profile",
+    icon: UserRound,
+    link: "/profile",
+  },
+];

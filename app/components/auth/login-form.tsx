@@ -10,6 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 
+import GoogleLoginButton from "./google-login-button";
+
 // import { useAuth } from "@/hooks/use-auth";
 
 export default function LoginForm() {
@@ -133,15 +135,7 @@ export default function LoginForm() {
       </div>
 
       {/* GOOGLE */}
-      <Button
-        variant="outline"
-        // disabled={loading}
-        // onClick={loginWithGoogle}
-        className="h-12 w-full rounded-xl border-slate-200 bg-white font-medium hover:bg-slate-50"
-      >
-        <span className="mr-2 text-base font-bold">G</span>
-        Continue with Google
-      </Button>
+      <GoogleLoginButton />
 
       {/* REGISTER */}
       <p className="mt-8 text-center text-sm text-slate-500">

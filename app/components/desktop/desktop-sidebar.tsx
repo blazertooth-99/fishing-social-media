@@ -15,36 +15,11 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import Logo from "@/assets/image/logo/logo_black_500px.png";
 import Image from "next/image";
+import { menuFeed } from "@/app/utils/constant";
 import { LogOut } from "lucide-react";
+import Link from "next/link";
 // import { useAuth } from "@/hooks/use-auth";
 
-const menu = [
-  {
-    label: "Home",
-    icon: Home,
-    active: true,
-  },
-  {
-    label: "Explore",
-    icon: Compass,
-  },
-  {
-    label: "Fishing Spots",
-    icon: MapPinned,
-  },
-  {
-    label: "Community",
-    icon: Users,
-  },
-  // {
-  //   label: "Messages",
-  //   icon: MessageCircle,
-  // },
-  {
-    label: "My Profile",
-    icon: UserRound,
-  },
-];
 // const { logout } = useAuth();
 
 const Sidebar = () => {
@@ -72,7 +47,7 @@ const Sidebar = () => {
 
       {/* NAVIGATION */}
       <nav className="space-y-1">
-        {menu.map((item) => {
+        {menuFeed.map((item) => {
           const Icon = item.icon;
 
           return (
@@ -81,19 +56,16 @@ const Sidebar = () => {
               className={`
                 group flex w-full items-center gap-3 rounded-xl px-3 py-3
                 text-base font-medium transition-all duration-200
-                ${
-                  item.active
-                    ? "bg-icon/40 text-tactive"
-                    : "text-tinactive hover:bg-icon/10 hover:text-thover"
-                }
               `}
             >
-              <Icon
-                size={19}
-                className="transition-transform duration-200 group-hover:scale-110"
-              />
+              <Link href={item.link}>
+                <Icon
+                  size={19}
+                  className="transition-transform duration-200 group-hover:scale-110"
+                />
 
-              {item.label}
+                {item.label}
+              </Link>
             </button>
           );
         })}
