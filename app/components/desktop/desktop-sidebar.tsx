@@ -18,11 +18,15 @@ import Image from "next/image";
 import { menuFeed } from "@/app/utils/constant";
 import { LogOut } from "lucide-react";
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { usePathname } from "next/navigation";
 // import { useAuth } from "@/hooks/use-auth";
 
 // const { logout } = useAuth();
 
 const Sidebar = () => {
+  const pathname = usePathname();
+
   return (
     <div className="sticky top-0 flex h-screen flex-col px-5 py-7">
       {/* LOGO */}
@@ -49,24 +53,49 @@ const Sidebar = () => {
       <nav className="space-y-1">
         {menuFeed.map((item) => {
           const Icon = item.icon;
+          const isActive = pathname === item.link;
 
           return (
-            <button
+            <Button
               key={item.label}
               className={`
-                group flex w-full items-center gap-3 rounded-xl px-3 py-3
-                text-base font-medium transition-all duration-200
-              `}
+                        group relative w-full justify-start items-center gap-3
+                        rounded-2xl px-5 py-5
+                        text-base font-medium transition-all duration-200
+                        ${
+                          isActive
+                            ? "bg-primary-hover/S0 text-tactive"
+                            : "bg-transparent text-tinactive hover:bg-primary-hover/20"
+                        }
+                      `}
             >
               <Link href={item.link}>
-                <Icon
-                  size={19}
-                  className="transition-transform duration-200 group-hover:scale-110"
-                />
+                <div className="flex items-center gap-3">
+                  <Icon
+                    size={19}
+                    className={`transition-transform duration-200"
+                          ${
+                            isActive
+                              ? "text-tactive"
+                              : "text-tinactive group-hover:scale-110 group-hover:text-tactive"
+                          }
+                      `}
+                  />
 
-                {item.label}
+                  <label
+                    className={`
+                                      ${
+                                        isActive
+                                          ? "font-semibold text-tactive"
+                                          : "text-tinactive group-hover:text-tactive"
+                                      }
+                    `}
+                  >
+                    {item.label}
+                  </label>
+                </div>
               </Link>
-            </button>
+            </Button>
           );
         })}
       </nav>
@@ -104,10 +133,12 @@ const Sidebar = () => {
 
       {/* BOTTOM */}
       <div className="mt-auto">
-        <button className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-base text-tinactive hover:bg-icon/10 hover:text-thover">
-          <Settings size={20} />
-          Settings
-        </button>
+        <Link href="/settings">
+          <button className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-base text-tinactive hover:bg-icon/10 hover:text-thover">
+            <Settings size={20} />
+            Settings
+          </button>
+        </Link>
 
         <div className="mt-4 flex items-center gap-3 rounded-2xl hover:bg-icon/10 p-3">
           <Avatar>

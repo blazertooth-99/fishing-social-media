@@ -20,6 +20,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 import { explorePosts } from "@/app/utils/discovery-data";
+import DesktopSidebar from "../desktop-sidebar";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -54,7 +55,9 @@ export default function DesktopExplore() {
   return (
     <main ref={containerRef} className="min-h-screen bg-slate-50">
       <div className="mx-auto grid max-w-[1400px] grid-cols-[240px_minmax(0,680px)_300px] gap-8 px-8 py-8">
-        {/* MAIN */}
+        <aside className="border-r border-slate-200 bg-white">
+          <DesktopSidebar />
+        </aside>
         <section className="col-start-2">
           <header className="explore-header mb-7">
             <div className="flex items-center justify-between">
@@ -141,7 +144,7 @@ export default function DesktopExplore() {
                   </div>
                 </div>
 
-                <div className="relative aspect-[16/10] overflow-hidden">
+                <div className="relative aspect-16/10 overflow-hidden">
                   <Image
                     src={post.image}
                     alt={post.content}

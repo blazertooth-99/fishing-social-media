@@ -98,6 +98,45 @@ export const fishingSpots = [
     description: "Spot sungai dengan berbagai teknik yang bisa digunakan.",
     recommended: false,
   },
+  {
+    id: 4,
+    name: "Waduk Jatiluhur",
+    location: "Purwakarta, Jawa Barat",
+    distance: "12 km",
+    rating: 4.8,
+    anglers: 342,
+    fish: ["Patin", "Nila", "Gabus"],
+    image: Fish2,
+    description:
+      "Salah satu spot favorit untuk freshwater fishing dengan area yang cukup luas.",
+    recommended: true,
+  },
+  {
+    id: 5,
+    name: "Waduk Jatiluhur",
+    location: "Purwakarta, Jawa Barat",
+    distance: "12 km",
+    rating: 4.8,
+    anglers: 342,
+    fish: ["Patin", "Nila", "Gabus"],
+    image: Fish2,
+    description:
+      "Salah satu spot favorit untuk freshwater fishing dengan area yang cukup luas.",
+    recommended: true,
+  },
+  {
+    id: 6,
+    name: "Waduk Jatiluhur",
+    location: "Purwakarta, Jawa Barat",
+    distance: "12 km",
+    rating: 4.8,
+    anglers: 342,
+    fish: ["Patin", "Nila", "Gabus"],
+    image: Fish2,
+    description:
+      "Salah satu spot favorit untuk freshwater fishing dengan area yang cukup luas.",
+    recommended: true,
+  },
 ];
 
 export interface Communities {

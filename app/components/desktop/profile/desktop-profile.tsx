@@ -62,7 +62,7 @@ export default function DesktopProfile() {
 
   return (
     <main ref={containerRef} className="min-h-screen bg-slate-50">
-      <div className="grid min-h-screen grid-cols-[240px_minmax(0,1fr)_320px]">
+      <div className="mx-auto grid max-w-350 grid-cols-[240px_minmax(0,680px)_300px] gap-8 py-8 px-8">
         {/* SIDEBAR */}
         <aside className="border-r border-slate-200 bg-white">
           <DesktopSidebar />
@@ -71,144 +71,148 @@ export default function DesktopProfile() {
         {/* PROFILE */}
         <section className="min-w-0">
           {/* TOP BAR */}
-          <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-200 bg-white/85 px-8 backdrop-blur-xl">
-            <p className="font-medium text-slate-900">{profileData.username}</p>
+          <div className="mx-auto max-w-3xl">
+            <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-200 bg-white/85 px-8 backdrop-blur-xl">
+              <p className="font-medium text-slate-900">
+                {profileData.username}
+              </p>
 
-            <div className="flex items-center gap-2">
-              <Button variant="ghost" size="icon" className="rounded-full">
-                <Search size={20} />
-              </Button>
-
-              <Button variant="ghost" size="icon" className="rounded-full">
-                <MoreHorizontal size={20} />
-              </Button>
-            </div>
-          </header>
-
-          {/* PROFILE HEADER */}
-          <div
-            ref={profileHeaderRef}
-            className="border-b border-slate-200 bg-white"
-          >
-            {/* COVER */}
-            <div className="relative h-44 overflow-hidden bg-gradient-to-r from-emerald-700 via-cyan-700 to-blue-700">
-              <div className="absolute inset-0 bg-black/10" />
-
-              <div className="absolute bottom-5 left-8">
-                <div className="profile-hero-item rounded-full bg-white/15 px-3 py-1 text-xs text-white backdrop-blur-md">
-                  🎣 Fishing Community
-                </div>
-              </div>
-            </div>
-
-            {/* PROFILE INFO */}
-            <div className="relative px-8 pb-8">
-              <Avatar className="profile-avatar absolute -top-16 h-32 w-32 border-4 border-white shadow-xl">
-                <AvatarImage src={profileData.avatar} />
-                <AvatarFallback>CA</AvatarFallback>
-              </Avatar>
-
-              <div className="flex justify-end gap-3 pt-5">
-                <Button variant="outline" className="rounded-xl">
-                  Share Profile
+              <div className="flex items-center gap-2">
+                <Button variant="ghost" size="icon" className="rounded-full">
+                  <Search size={20} />
                 </Button>
 
-                <Button className="rounded-xl bg-emerald-600 hover:bg-emerald-700">
-                  Edit Profile
+                <Button variant="ghost" size="icon" className="rounded-full">
+                  <MoreHorizontal size={20} />
                 </Button>
               </div>
+            </header>
 
-              <div className="profile-hero-item mt-5 pt-5">
-                <h1 className="text-3xl font-bold tracking-tight text-slate-950">
-                  {profileData.name}
-                </h1>
+            {/* PROFILE HEADER */}
+            <div
+              ref={profileHeaderRef}
+              className="border-b border-slate-200 bg-white"
+            >
+              {/* COVER */}
+              <div className="relative h-44 overflow-hidden bg-gradient-to-r from-emerald-700 via-cyan-700 to-blue-700">
+                <div className="absolute inset-0 bg-black/10" />
 
-                <p className="mt-1 text-sm text-slate-500">
-                  {profileData.username}
-                </p>
-
-                <p className="mt-4 max-w-xl text-sm leading-6 text-slate-600">
-                  {profileData.bio}
-                </p>
-
-                <div className="mt-4 flex flex-wrap gap-4 text-sm text-slate-500">
-                  <span className="flex items-center gap-1.5">
-                    <MapPin size={15} />
-                    Central Java
-                  </span>
-
-                  <span className="flex items-center gap-1.5">
-                    <LinkIcon size={15} />
-                    fishing.community
-                  </span>
-                </div>
-
-                <div className="mt-5 flex gap-6">
-                  <div>
-                    <span className="font-bold text-slate-900">
-                      {profileData.followers}
-                    </span>
-
-                    <span className="ml-1 text-sm text-slate-500">
-                      Followers
-                    </span>
-                  </div>
-
-                  <div>
-                    <span className="font-bold text-slate-900">
-                      {profileData.following}
-                    </span>
-
-                    <span className="ml-1 text-sm text-slate-500">
-                      Following
-                    </span>
+                <div className="absolute bottom-5 left-8">
+                  <div className="profile-hero-item rounded-full bg-white/15 px-3 py-1 text-xs text-white backdrop-blur-md">
+                    🎣 Fishing Community
                   </div>
                 </div>
               </div>
+
+              {/* PROFILE INFO */}
+              <div className="relative px-8 pb-8">
+                <Avatar className="profile-avatar absolute -top-16 h-32 w-32 border-4 border-white shadow-xl">
+                  <AvatarImage src={profileData.avatar} />
+                  <AvatarFallback>CA</AvatarFallback>
+                </Avatar>
+
+                <div className="flex justify-end gap-3 pt-5">
+                  <Button variant="outline" className="rounded-xl">
+                    Share Profile
+                  </Button>
+
+                  <Button className="rounded-xl bg-emerald-600 hover:bg-emerald-700">
+                    Edit Profile
+                  </Button>
+                </div>
+
+                <div className="profile-hero-item mt-5 pt-5">
+                  <h1 className="text-3xl font-bold tracking-tight text-slate-950">
+                    {profileData.name}
+                  </h1>
+
+                  <p className="mt-1 text-sm text-slate-500">
+                    {profileData.username}
+                  </p>
+
+                  <p className="mt-4 max-w-xl text-sm leading-6 text-slate-600">
+                    {profileData.bio}
+                  </p>
+
+                  <div className="mt-4 flex flex-wrap gap-4 text-sm text-slate-500">
+                    <span className="flex items-center gap-1.5">
+                      <MapPin size={15} />
+                      Central Java
+                    </span>
+
+                    <span className="flex items-center gap-1.5">
+                      <LinkIcon size={15} />
+                      fishing.community
+                    </span>
+                  </div>
+
+                  <div className="mt-5 flex gap-6">
+                    <div>
+                      <span className="font-bold text-slate-900">
+                        {profileData.followers}
+                      </span>
+
+                      <span className="ml-1 text-sm text-slate-500">
+                        Followers
+                      </span>
+                    </div>
+
+                    <div>
+                      <span className="font-bold text-slate-900">
+                        {profileData.following}
+                      </span>
+
+                      <span className="ml-1 text-sm text-slate-500">
+                        Following
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
 
-          {/* PROFILE CONTENT */}
-          <div
-            ref={profileContentRef}
-            className="profile-content mx-auto max-w-3xl"
-          >
-            <Tabs defaultValue="posts">
-              <TabsList className="grid h-14 w-full grid-cols-3 rounded-none border-b border-slate-200 bg-white p-0">
-                <TabsTrigger
-                  value="posts"
-                  className="h-full rounded-none data-[state=active]:border-b-2 data-[state=active]:border-emerald-600 data-[state=active]:text-emerald-600"
-                >
-                  Posts
-                </TabsTrigger>
+            {/* PROFILE CONTENT */}
+            <div
+              ref={profileContentRef}
+              className="profile-content mx-auto max-w-3xl"
+            >
+              <Tabs defaultValue="posts">
+                <TabsList className="grid h-14 w-full grid-cols-3 rounded-none border-b border-slate-200 bg-white p-0">
+                  <TabsTrigger
+                    value="posts"
+                    className="h-full rounded-none data-[state=active]:border-b-2 data-[state=active]:border-emerald-600 data-[state=active]:text-emerald-600"
+                  >
+                    Posts
+                  </TabsTrigger>
 
-                <TabsTrigger
-                  value="replies"
-                  className="h-full rounded-none data-[state=active]:border-b-2 data-[state=active]:border-emerald-600 data-[state=active]:text-emerald-600"
-                >
-                  Replies
-                </TabsTrigger>
+                  <TabsTrigger
+                    value="replies"
+                    className="h-full rounded-none data-[state=active]:border-b-2 data-[state=active]:border-emerald-600 data-[state=active]:text-emerald-600"
+                  >
+                    Replies
+                  </TabsTrigger>
 
-                <TabsTrigger
-                  value="media"
-                  className="h-full rounded-none data-[state=active]:border-b-2 data-[state=active]:border-emerald-600 data-[state=active]:text-emerald-600"
-                >
-                  Media
-                </TabsTrigger>
-              </TabsList>
+                  <TabsTrigger
+                    value="media"
+                    className="h-full rounded-none data-[state=active]:border-b-2 data-[state=active]:border-emerald-600 data-[state=active]:text-emerald-600"
+                  >
+                    Media
+                  </TabsTrigger>
+                </TabsList>
 
-              <TabsContent value="posts" className="m-0">
-                <ProfileEmptyState />
-              </TabsContent>
+                <TabsContent value="posts" className="m-0">
+                  <ProfileEmptyState />
+                </TabsContent>
 
-              <TabsContent value="replies" className="m-0">
-                <ProfileEmptyState text="No replies yet" />
-              </TabsContent>
+                <TabsContent value="replies" className="m-0">
+                  <ProfileEmptyState text="No replies yet" />
+                </TabsContent>
 
-              <TabsContent value="media" className="m-0">
-                <ProfileEmptyState text="No media yet" />
-              </TabsContent>
-            </Tabs>
+                <TabsContent value="media" className="m-0">
+                  <ProfileEmptyState text="No media yet" />
+                </TabsContent>
+              </Tabs>
+            </div>
           </div>
         </section>
 

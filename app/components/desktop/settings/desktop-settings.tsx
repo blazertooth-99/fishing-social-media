@@ -13,6 +13,7 @@ import { useLayoutEffect, useRef } from "react";
 import gsap from "gsap";
 
 import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 
 const settingsItems = [
   {
@@ -41,6 +42,8 @@ const settingsItems = [
 
 export default function DesktopSettings() {
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const router = useRouter();
 
   useLayoutEffect(() => {
     const ctx = gsap.context(() => {
@@ -88,6 +91,7 @@ export default function DesktopSettings() {
         {/* HEADER */}
         <header className="settings-header mb-8 flex items-center gap-4">
           <Button
+            onClick={() => router.back()}
             variant="ghost"
             size="icon"
             className="rounded-full hover:bg-slate-200"

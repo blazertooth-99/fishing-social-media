@@ -19,6 +19,7 @@ import { Textarea } from "@/components/ui/textarea";
 
 import PostFishingDetails from "@/app/components/shared/post/post-fishing-details";
 import PostMediaPicker from "@/app/components/shared/post/post-media-picker";
+import { useRouter } from "next/navigation";
 
 export interface MobilePostProps {
   onClose?: () => void;
@@ -27,6 +28,7 @@ export interface MobilePostProps {
 
 export default function MobilePost({ onClose, onSubmit }: MobilePostProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
 
   useLayoutEffect(() => {
     const ctx = gsap.context(() => {
@@ -93,7 +95,7 @@ export default function MobilePost({ onClose, onSubmit }: MobilePostProps) {
           variant="ghost"
           size="icon"
           className="h-9 w-9 rounded-full text-slate-500"
-          onClick={onClose}
+          onClick={() => router.back()}
           aria-label="Close post"
         >
           <X size={20} />

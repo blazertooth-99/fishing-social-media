@@ -16,6 +16,8 @@ import {
   Users,
   UserRound,
   LucideIcon,
+  Menu,
+  Plus,
 } from "lucide-react";
 import { Icon } from "next/dist/lib/metadata/types/metadata-types";
 
@@ -165,7 +167,7 @@ export const menuFeed: MenuFeed[] = [
   {
     label: "Home",
     icon: Home,
-    link: "#",
+    link: "/feed",
   },
   {
     label: "Explore",
@@ -186,5 +188,41 @@ export const menuFeed: MenuFeed[] = [
     label: "My Profile",
     icon: UserRound,
     link: "/profile",
+  },
+];
+
+export interface Navigation {
+  label: string;
+  icon: LucideIcon;
+  link?: string;
+  primary?: boolean;
+  dropdown?: boolean;
+}
+export const navigation: Navigation[] = [
+  {
+    label: "Home",
+    icon: Home,
+    link: "/feed",
+  },
+  {
+    label: "Spots",
+    icon: MapPinned,
+    link: "/fishing-spots",
+  },
+  {
+    label: "Post",
+    icon: Plus,
+    primary: true,
+  },
+  {
+    label: "Explore",
+    icon: Compass,
+    link: "/explore",
+  },
+  {
+    label: "Menu",
+    icon: Menu,
+    dropdown: true,
+    primary: false,
   },
 ];

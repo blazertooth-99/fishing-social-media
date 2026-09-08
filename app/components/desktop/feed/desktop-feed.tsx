@@ -8,7 +8,7 @@ import CreatePost from "@/app/components/shared/post/create-post";
 export default function DesktopLayout() {
   return (
     <main className="min-h-screen bg-slate-50">
-      <div className="grid min-h-screen grid-cols-[240px_minmax(0,1fr)_320px]">
+      <div className="mx-auto max-w-350 grid min-h-screen grid-cols-[240px_minmax(0,680px)_300px] gap-8 px-8 py-8">
         {/* LEFT SIDEBAR */}
         <aside className="border-r border-slate-200 bg-white">
           <DesktopSidebar />
