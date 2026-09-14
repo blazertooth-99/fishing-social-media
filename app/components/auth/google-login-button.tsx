@@ -3,17 +3,17 @@
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { loginWithGoogle } from "@/lib/auth/auth-client";
 
-const API_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? "https://api-fishing.janissaryid.com";
+const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
 export default function GoogleLoginButton() {
-  const [loading, setLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
   function handleGoogleLogin() {
-    setLoading(true);
+    setIsGoogleLoading(true);
 
-    window.location.href = `${API_URL}/api/v1/auth/google`;
+    loginWithGoogle();
   }
 
   return (
@@ -21,10 +21,10 @@ export default function GoogleLoginButton() {
       type="button"
       variant="outline"
       onClick={handleGoogleLogin}
-      disabled={loading}
+      disabled={isGoogleLoading}
       className="w-full rounded-xl"
     >
-      {loading ? (
+      {isGoogleLoading ? (
         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
       ) : (
         <span className="mr-2 font-bold">G</span>
