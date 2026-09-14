@@ -1,6 +1,6 @@
 import LoginForm from "../auth/login-form";
 
-export default function AuthController() {
+export default function LoginFormController() {
   return (
     <>
       <div>
