@@ -5,25 +5,34 @@ import {
   ChevronRight,
   CircleHelp,
   LockKeyhole,
+  LogOut,
   SlidersHorizontal,
   UserRoundCheck,
 } from "lucide-react";
 
-import { useLayoutEffect, useRef } from "react";
+import {
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
+
 import gsap from "gsap";
 
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
+import { api } from "@/lib/api";
 
 const settingsItems = [
   {
     title: "Privacy",
-    description: "Control who can see your content and interact with you.",
+    description:
+      "Control who can see your content and interact with you.",
     icon: LockKeyhole,
   },
   {
     title: "Account status",
-    description: "See if your account or content has any restrictions.",
+    description:
+      "See if your account or content has any restrictions.",
     icon: UserRoundCheck,
   },
   {
@@ -38,6 +47,13 @@ const settingsItems = [
       "Find answers and get support for your Fishing Community account.",
     icon: CircleHelp,
   },
+  {
+    title: "Logout",
+    description:
+      "Logout from your Fishing Community account.",
+    icon: LogOut,
+    logout: true,
+  },
 ];
 
 export default function DesktopSettings() {
@@ -45,7 +61,55 @@ export default function DesktopSettings() {
 
   const router = useRouter();
 
+  const [checkingSession, setCheckingSession] =
+    useState(true);
+
+  const [loggingOut, setLoggingOut] =
+    useState(false);
+
+  /*
+   * ========================================
+   * CHECK SESSION
+   * ========================================
+   */
+
   useLayoutEffect(() => {
+    async function checkSession() {
+      try {
+        const session = await api.getSession();
+
+        if (!session?.data) {
+          router.replace("/login");
+          return;
+        }
+
+        console.log("SESSION:", session);
+      } catch (error) {
+        console.error(
+          "SESSION CHECK ERROR:",
+          error,
+        );
+
+        router.replace("/login");
+      } finally {
+        setCheckingSession(false);
+      }
+    }
+
+    checkSession();
+  }, [router]);
+
+  /*
+   * ========================================
+   * GSAP ANIMATION
+   * ========================================
+   */
+
+  useLayoutEffect(() => {
+    if (checkingSession) {
+      return;
+    }
+
     const ctx = gsap.context(() => {
       const tl = gsap.timeline({
         defaults: {
@@ -79,8 +143,72 @@ export default function DesktopSettings() {
         );
     }, containerRef);
 
-    return () => ctx.revert();
-  }, []);
+    return () => {
+      ctx.revert();
+    };
+  }, [checkingSession]);
+
+  /*
+   * ========================================
+   * LOGOUT
+   * ========================================
+   */
+
+  const handleLogout = async () => {
+    if (loggingOut) {
+      return;
+    }
+
+    try {
+      setLoggingOut(true);
+
+      console.log("Logging out...");
+
+      await api.logout();
+
+      console.log("Logout berhasil.");
+
+      router.replace("/login");
+    } catch (error) {
+      console.error(
+        "LOGOUT ERROR:",
+        error,
+      );
+
+      /*
+       * Kalau backend logout gagal,
+       * tetap hapus session token lokal.
+       */
+
+      api.setSessionToken(null);
+
+      router.replace("/login");
+    } finally {
+      setLoggingOut(false);
+    }
+  };
+
+  /*
+   * ========================================
+   * SESSION LOADING
+   * ========================================
+   */
+
+  if (checkingSession) {
+    return (
+      <main className="flex min-h-screen items-center justify-center">
+        <p className="text-sm text-muted-foreground">
+          Checking session...
+        </p>
+      </main>
+    );
+  }
+
+  /*
+   * ========================================
+   * MAIN UI
+   * ========================================
+   */
 
   return (
     <main
@@ -88,7 +216,11 @@ export default function DesktopSettings() {
       className="min-h-screen bg-slate-50 text-slate-900"
     >
       <div className="mx-auto max-w-3xl px-8 py-10">
-        {/* HEADER */}
+
+        {/* ==================================
+            HEADER
+        ================================== */}
+
         <header className="settings-header mb-8 flex items-center gap-4">
           <Button
             onClick={() => router.back()}
@@ -96,60 +228,215 @@ export default function DesktopSettings() {
             size="icon"
             className="rounded-full hover:bg-slate-200"
           >
-            <ArrowLeft size={21} />
+            <ArrowLeft
+              size={21}
+              strokeWidth={1.8}
+            />
           </Button>
 
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
+            <h1 className="text-3xl font-bold tracking-tight">
+              Settings
+            </h1>
 
             <p className="mt-1 text-sm text-slate-500">
-              Manage your Fishing Community experience.
+              Manage your Fishing Community
+              experience.
             </p>
           </div>
         </header>
 
-        {/* SETTINGS CARD */}
+        {/* ==================================
+            SETTINGS CARD
+        ================================== */}
+
         <section className="settings-card overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-          {settingsItems.map((item, index) => {
-            const Icon = item.icon;
+          {settingsItems.map(
+            (item, index) => {
+              const Icon = item.icon;
 
-            return (
-              <button
-                key={item.title}
-                type="button"
-                className={`settings-item group flex w-full items-center gap-5 px-6 py-5 text-left transition-colors hover:bg-emerald-50/60 ${
-                  index !== settingsItems.length - 1
-                    ? "border-b border-slate-100"
-                    : ""
-                }`}
-              >
-                {/* ICON */}
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-slate-600 transition-all duration-300 group-hover:bg-emerald-100 group-hover:text-emerald-600 group-hover:scale-105">
-                  <Icon size={21} strokeWidth={1.8} />
-                </span>
+              /*
+               * =================================
+               * LOGOUT ITEM
+               * =================================
+               */
 
-                {/* CONTENT */}
-                <span className="min-w-0 flex-1">
-                  <span className="block text-sm font-semibold text-slate-900">
-                    {item.title}
+              if (item.logout) {
+                return (
+                  <button
+                    key={item.title}
+                    type="button"
+                    onClick={handleLogout}
+                    disabled={loggingOut}
+                    className={`
+                      settings-item
+                      group
+                      flex
+                      w-full
+                      items-center
+                      gap-5
+                      px-6
+                      py-5
+                      text-left
+                      transition-colors
+                      hover:bg-red-50
+                      disabled:cursor-not-allowed
+                      disabled:opacity-70
+                      ${index !==
+                        settingsItems.length - 1
+                        ? "border-b border-slate-100"
+                        : ""
+                      }
+                    `}
+                  >
+                    {/* LOGOUT ICON */}
+
+                    <span
+                      className="
+                        flex
+                        h-11
+                        w-11
+                        shrink-0
+                        items-center
+                        justify-center
+                        rounded-2xl
+                        bg-red-100
+                        text-red-500
+                        transition-all
+                        duration-300
+                        group-hover:scale-105
+                        group-hover:bg-red-200
+                        group-hover:text-red-600
+                      "
+                    >
+                      <LogOut
+                        size={21}
+                        strokeWidth={1.8}
+                      />
+                    </span>
+
+                    {/* CONTENT */}
+
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-sm font-semibold text-slate-900">
+                        {loggingOut
+                          ? "Logging out..."
+                          : "Logout"}
+                      </span>
+
+                      <span className="mt-1 block max-w-xl text-sm leading-5 text-slate-500">
+                        Logout from your Fishing
+                        Community account.
+                      </span>
+                    </span>
+
+                    {/* ARROW */}
+
+                    <ChevronRight
+                      size={19}
+                      className="
+                        shrink-0
+                        text-slate-300
+                        transition-all
+                        duration-300
+                        group-hover:translate-x-1
+                        group-hover:text-red-500
+                      "
+                    />
+                  </button>
+                );
+              }
+
+              /*
+               * =================================
+               * NORMAL SETTINGS ITEM
+               * =================================
+               */
+
+              return (
+                <button
+                  key={item.title}
+                  type="button"
+                  className={`
+                    settings-item
+                    group
+                    flex
+                    w-full
+                    items-center
+                    gap-5
+                    px-6
+                    py-5
+                    text-left
+                    transition-colors
+                    hover:bg-emerald-50/60
+                    ${index !==
+                      settingsItems.length - 1
+                      ? "border-b border-slate-100"
+                      : ""
+                    }
+                  `}
+                >
+                  {/* ICON */}
+
+                  <span
+                    className="
+                      flex
+                      h-11
+                      w-11
+                      shrink-0
+                      items-center
+                      justify-center
+                      rounded-2xl
+                      bg-slate-100
+                      text-slate-600
+                      transition-all
+                      duration-300
+                      group-hover:scale-105
+                      group-hover:bg-emerald-100
+                      group-hover:text-emerald-600
+                    "
+                  >
+                    <Icon
+                      size={21}
+                      strokeWidth={1.8}
+                    />
                   </span>
 
-                  <span className="mt-1 block max-w-xl text-sm leading-5 text-slate-500">
-                    {item.description}
-                  </span>
-                </span>
+                  {/* CONTENT */}
 
-                {/* ARROW */}
-                <ChevronRight
-                  size={19}
-                  className="shrink-0 text-slate-300 transition-transform duration-300 group-hover:translate-x-1 group-hover:text-emerald-600"
-                />
-              </button>
-            );
-          })}
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm font-semibold text-slate-900">
+                      {item.title}
+                    </span>
+
+                    <span className="mt-1 block max-w-xl text-sm leading-5 text-slate-500">
+                      {item.description}
+                    </span>
+                  </span>
+
+                  {/* ARROW */}
+
+                  <ChevronRight
+                    size={19}
+                    className="
+                      shrink-0
+                      text-slate-300
+                      transition-all
+                      duration-300
+                      group-hover:translate-x-1
+                      group-hover:text-emerald-600
+                    "
+                  />
+                </button>
+              );
+            },
+          )}
         </section>
 
-        {/* BRAND FOOTER */}
+        {/* ==================================
+            FOOTER
+        ================================== */}
+
         <p className="mt-8 text-center text-xs text-slate-400">
           Fishing Community · Made for anglers 🎣
         </p>
