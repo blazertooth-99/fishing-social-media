@@ -10,15 +10,22 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 
-import GoogleLoginButton from "./google-login-button";
-
+// import { useRouter } from "next/navigation";
+import GoogleLoginButtonN from "@/app/components/auth/GoogleLoginButtonN";
 // import { useAuth } from "@/hooks/use-auth";
 
 export default function LoginForm() {
-  // const { loginWithGoogle, loading } = useAuth();
+  // const router = useRouter();
+  // const { isAuthenticated, loading } = useAuth();
   const formRef = useRef<HTMLDivElement>(null);
 
   const [showPassword, setShowPassword] = useState(false);
+
+  // useEffect(() => {
+  //   if (!loading && isAuthenticated) {
+  //     router.replace("/feed");
+  //   }
+  // }, [loading, isAuthenticated, router]);
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -135,7 +142,7 @@ export default function LoginForm() {
       </div>
 
       {/* GOOGLE */}
-      <GoogleLoginButton />
+      <GoogleLoginButtonN />
 
       {/* REGISTER */}
       <p className="mt-8 text-center text-sm text-slate-500">

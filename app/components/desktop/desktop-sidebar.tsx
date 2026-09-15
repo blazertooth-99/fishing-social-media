@@ -22,10 +22,9 @@ import { Button } from "@/components/ui/button";
 import { usePathname } from "next/navigation";
 // import { useAuth } from "@/hooks/use-auth";
 
-// const { logout } = useAuth();
-
 const Sidebar = () => {
   const pathname = usePathname();
+  // const { logout, user } = useAuth();
 
   return (
     <div className="sticky top-0 flex h-screen flex-col px-5 py-7">
@@ -140,28 +139,37 @@ const Sidebar = () => {
           </button>
         </Link>
 
-        <div className="mt-4 flex items-center gap-3 rounded-2xl hover:bg-icon/10 p-3">
-          <Avatar>
-            <AvatarFallback>CS</AvatarFallback>
-          </Avatar>
+        {/* <div className="mt-4 flex flex-col gap-2 rounded-2xl p-2 hover:bg-slate-50">
+          <div className="flex items-center gap-3">
+            <Avatar>
+              <AvatarFallback>
+                {user?.display_name?.slice(0, 2).toUpperCase() ||
+                  user?.name?.slice(0, 2).toUpperCase() ||
+                  "AN"}
+              </AvatarFallback>
+            </Avatar>
 
-          <div className="min-w-0 group ">
-            <p className="truncate text-sm font-semibold text-slate-900 group-hover:text-thover">
-              Lancea
-            </p>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-semibold text-slate-900">
+                {user?.display_name || user?.name || "Angler"}
+              </p>
 
-            <p className="truncate text-xs text-slate-400 group-hover:text-thover">
-              @LanceaFishing
-            </p>
-            {/* <button
-              onClick={logout}
-              className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm text-slate-500 transition-colors hover:bg-red-50 hover:text-red-600"
-            >
-              <LogOut size={19} />
-              Sign out
-            </button> */}
+              <p className="truncate text-xs text-slate-400">
+                {user?.username
+                  ? `@${user.username}`
+                  : user?.email || "@angler"}
+              </p>
+            </div>
           </div>
-        </div>
+
+          <button
+            onClick={() => logout()}
+            className="flex w-full items-center gap-2 rounded-xl px-2 py-1.5 text-xs font-medium text-slate-500 transition-colors hover:bg-red-50 hover:text-red-600"
+          >
+            <LogOut size={15} />
+            Sign out
+          </button>
+        </div> */}
       </div>
     </div>
   );

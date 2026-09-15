@@ -1,11 +1,10 @@
 import ProfileController from "@/app/components/shared/profile/profile-controller";
-// import { requireAuth } from "@/lib/auth/guards";
+import AuthGuard from "@/app/components/auth/auth-guard";
 
-export default async function ProfilePage() {
-  // const user = await requireAuth();
-
+export default function ProfilePage() {
   return (
-    // <ProfileController user={user} />
-    <ProfileController />
+    <AuthGuard>
+      <ProfileController />
+    </AuthGuard>
   );
 }

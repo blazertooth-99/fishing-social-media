@@ -2,10 +2,26 @@ import DesktopSidebar from "../desktop-sidebar";
 import DesktopRightSidebar from "../desktop-right-sidebar";
 import DesktopFishingPost from "../desktop-fishing-post";
 import { fishingPostProps } from "@/app/utils/constant";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 
+import { api } from "@/lib/api";
 import CreatePost from "@/app/components/shared/post/create-post";
 
 export default function DesktopLayout() {
+  const router = useRouter();
+  useEffect(() => {
+    async function check() {
+      const session = await api.getSession();
+
+      if (!session?.data) {
+        router.replace("/login");
+        return;
+      }
+    }
+
+    check();
+  }, [router]);
   return (
     <main className="min-h-screen bg-slate-50">
       <div className="mx-auto max-w-350 grid min-h-screen grid-cols-[240px_minmax(0,680px)_300px] gap-8 px-8 py-8">
