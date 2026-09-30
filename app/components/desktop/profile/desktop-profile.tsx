@@ -1,259 +1,401 @@
+// components/desktop/desktop-profile.tsx
+
 "use client";
 
-import { useLayoutEffect, useRef } from "react";
-import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-import {
-  MoreHorizontal,
-  Search,
-  MapPin,
-  Link as LinkIcon,
-  UserPlus,
-} from "lucide-react";
+import { useRef, useState } from "react";
+
+import { Camera, MapPin, Pencil, Users } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-import DesktopSidebar from "@/app/components/desktop/desktop-sidebar";
-import { profileData } from "@/app/utils/constant";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
-gsap.registerPlugin(ScrollTrigger);
+import { Input } from "@/components/ui/input";
 
-export default function DesktopProfile() {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const profileHeaderRef = useRef<HTMLDivElement>(null);
-  const profileContentRef = useRef<HTMLDivElement>(null);
+import { Textarea } from "@/components/ui/textarea";
 
-  useLayoutEffect(() => {
-    const ctx = gsap.context(() => {
-      // HEADER ENTRANCE
-      gsap.from(".profile-hero-item", {
-        opacity: 0,
-        y: 25,
-        duration: 0.7,
-        stagger: 0.08,
-        ease: "power3.out",
+import type { UserProfile } from "@/lib/api/profile";
+
+import { getAvatarUrl } from "@/lib/api/media";
+
+interface ProfileUpdateData {
+  display_name: string;
+  bio: string;
+  avatar_file?: File | null;
+}
+
+interface DesktopProfileProps {
+  profile: UserProfile;
+  saving?: boolean;
+  onUpdateProfile?: (data: ProfileUpdateData) => Promise<void>;
+}
+
+export default function DesktopProfile({
+  profile,
+  saving = false,
+  onUpdateProfile,
+}: DesktopProfileProps) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [editOpen, setEditOpen] = useState(false);
+
+  const [displayName, setDisplayName] = useState(profile.display_name);
+
+  const [bio, setBio] = useState(profile.bio ?? "");
+
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+
+  const [previewAvatar, setPreviewAvatar] = useState<string | null>(
+    getAvatarUrl(profile.avatar_media_id),
+  );
+
+  const [formError, setFormError] = useState<string | null>(null);
+
+  const initials =
+    profile.display_name?.trim().slice(0, 2).toUpperCase() || "AN";
+
+  function openEditProfile() {
+    setDisplayName(profile.display_name);
+    setBio(profile.bio ?? "");
+
+    setAvatarFile(null);
+
+    setPreviewAvatar(getAvatarUrl(profile.avatar_media_id));
+
+    setFormError(null);
+    setEditOpen(true);
+  }
+
+  function handleAvatarChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      setFormError("Please select a valid image file.");
+      return;
+    }
+
+    if (file.size > 15 * 1024 * 1024) {
+      setFormError("Image size must be less than 15MB.");
+      return;
+    }
+
+    setAvatarFile(file);
+
+    const previewUrl = URL.createObjectURL(file);
+
+    setPreviewAvatar(previewUrl);
+    setFormError(null);
+  }
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!displayName.trim()) {
+      setFormError("Display name cannot be empty.");
+      return;
+    }
+
+    if (!onUpdateProfile) {
+      return;
+    }
+
+    try {
+      setFormError(null);
+
+      await onUpdateProfile({
+        display_name: displayName,
+        bio,
+        avatar_file: avatarFile,
       });
 
-      // PROFILE CONTENT
-      gsap.from(".profile-content", {
-        opacity: 0,
-        y: 35,
-        duration: 0.8,
-        delay: 0.25,
-        ease: "power3.out",
-      });
-
-      // AVATAR PARALLAX
-      gsap.to(".profile-avatar", {
-        y: 12,
-        scrollTrigger: {
-          trigger: profileHeaderRef.current,
-          start: "top top",
-          end: "bottom top",
-          scrub: true,
-        },
-      });
-    }, containerRef);
-
-    return () => ctx.revert();
-  }, []);
+      setEditOpen(false);
+    } catch (error) {
+      setFormError(
+        error instanceof Error ? error.message : "Failed to update profile.",
+      );
+    }
+  }
 
   return (
-    <main ref={containerRef} className="min-h-screen bg-slate-50">
-      <div className="mx-auto grid max-w-350 grid-cols-[240px_minmax(0,680px)_300px] gap-8 py-8 px-8">
-        {/* SIDEBAR */}
-        <aside className="border-r border-slate-200 bg-white">
-          <DesktopSidebar />
-        </aside>
-
-        {/* PROFILE */}
-        <section className="min-w-0">
-          {/* TOP BAR */}
-          <div className="mx-auto max-w-3xl">
-            <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-200 bg-white/85 px-8 backdrop-blur-xl">
-              <p className="font-medium text-slate-900">
-                {profileData.username}
-              </p>
-
-              <div className="flex items-center gap-2">
-                <Button variant="ghost" size="icon" className="rounded-full">
-                  <Search size={20} />
-                </Button>
-
-                <Button variant="ghost" size="icon" className="rounded-full">
-                  <MoreHorizontal size={20} />
-                </Button>
-              </div>
-            </header>
-
-            {/* PROFILE HEADER */}
-            <div
-              ref={profileHeaderRef}
-              className="border-b border-slate-200 bg-white"
-            >
-              {/* COVER */}
-              <div className="relative h-44 overflow-hidden bg-gradient-to-r from-emerald-700 via-cyan-700 to-blue-700">
-                <div className="absolute inset-0 bg-black/10" />
-
-                <div className="absolute bottom-5 left-8">
-                  <div className="profile-hero-item rounded-full bg-white/15 px-3 py-1 text-xs text-white backdrop-blur-md">
-                    🎣 Fishing Community
-                  </div>
-                </div>
-              </div>
-
-              {/* PROFILE INFO */}
-              <div className="relative px-8 pb-8">
-                <Avatar className="profile-avatar absolute -top-16 h-32 w-32 border-4 border-white shadow-xl">
-                  <AvatarImage src={profileData.avatar} />
-                  <AvatarFallback>CA</AvatarFallback>
-                </Avatar>
-
-                <div className="flex justify-end gap-3 pt-5">
-                  <Button variant="outline" className="rounded-xl">
-                    Share Profile
-                  </Button>
-
-                  <Button className="rounded-xl bg-emerald-600 hover:bg-emerald-700">
-                    Edit Profile
-                  </Button>
-                </div>
-
-                <div className="profile-hero-item mt-5 pt-5">
-                  <h1 className="text-3xl font-bold tracking-tight text-slate-950">
-                    {profileData.name}
-                  </h1>
-
-                  <p className="mt-1 text-sm text-slate-500">
-                    {profileData.username}
-                  </p>
-
-                  <p className="mt-4 max-w-xl text-sm leading-6 text-slate-600">
-                    {profileData.bio}
-                  </p>
-
-                  <div className="mt-4 flex flex-wrap gap-4 text-sm text-slate-500">
-                    <span className="flex items-center gap-1.5">
-                      <MapPin size={15} />
-                      Central Java
-                    </span>
-
-                    <span className="flex items-center gap-1.5">
-                      <LinkIcon size={15} />
-                      fishing.community
-                    </span>
-                  </div>
-
-                  <div className="mt-5 flex gap-6">
-                    <div>
-                      <span className="font-bold text-slate-900">
-                        {profileData.followers}
-                      </span>
-
-                      <span className="ml-1 text-sm text-slate-500">
-                        Followers
-                      </span>
-                    </div>
-
-                    <div>
-                      <span className="font-bold text-slate-900">
-                        {profileData.following}
-                      </span>
-
-                      <span className="ml-1 text-sm text-slate-500">
-                        Following
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
+    <main className="min-h-screen bg-slate-50">
+      <div className="mx-auto max-w-5xl px-8 py-8">
+        {/* PROFILE CARD */}
+        <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+          {/* COVER */}
+          <div className="relative h-56 overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-900">
+            <div className="absolute inset-0 opacity-20">
+              <div className="absolute -right-20 -top-20 size-72 rounded-full border border-white/30" />
+              <div className="absolute right-20 top-10 size-40 rounded-full border border-white/20" />
             </div>
 
-            {/* PROFILE CONTENT */}
-            <div
-              ref={profileContentRef}
-              className="profile-content mx-auto max-w-3xl"
-            >
-              <Tabs defaultValue="posts">
-                <TabsList className="grid h-14 w-full grid-cols-3 rounded-none border-b border-slate-200 bg-white p-0">
-                  <TabsTrigger
-                    value="posts"
-                    className="h-full rounded-none data-[state=active]:border-b-2 data-[state=active]:border-emerald-600 data-[state=active]:text-emerald-600"
-                  >
-                    Posts
-                  </TabsTrigger>
+            <div className="absolute bottom-5 left-6 text-white">
+              <p className="text-sm font-medium text-white/70">
+                Fishing Community
+              </p>
 
-                  <TabsTrigger
-                    value="replies"
-                    className="h-full rounded-none data-[state=active]:border-b-2 data-[state=active]:border-emerald-600 data-[state=active]:text-emerald-600"
-                  >
-                    Replies
-                  </TabsTrigger>
+              <h2 className="text-2xl font-bold">Angler Profile</h2>
+            </div>
+          </div>
 
-                  <TabsTrigger
-                    value="media"
-                    className="h-full rounded-none data-[state=active]:border-b-2 data-[state=active]:border-emerald-600 data-[state=active]:text-emerald-600"
-                  >
-                    Media
-                  </TabsTrigger>
-                </TabsList>
+          {/* PROFILE BODY */}
+          <div className="relative px-8 pb-8">
+            {/* AVATAR */}
+            <div className="-mt-16 mb-5">
+              <Avatar className="size-32 border-4 border-white shadow-xl">
+                <AvatarImage
+                  src={getAvatarUrl(profile.avatar_media_id) ?? undefined}
+                  alt={profile.display_name}
+                />
 
-                <TabsContent value="posts" className="m-0">
-                  <ProfileEmptyState />
-                </TabsContent>
+                <AvatarFallback className="bg-slate-900 text-2xl font-bold text-white">
+                  {initials}
+                </AvatarFallback>
+              </Avatar>
+            </div>
 
-                <TabsContent value="replies" className="m-0">
-                  <ProfileEmptyState text="No replies yet" />
-                </TabsContent>
+            {/* HEADER */}
+            <div className="flex items-start justify-between gap-6">
+              <div className="min-w-0">
+                <h1 className="truncate text-3xl font-bold text-slate-900">
+                  {profile.display_name}
+                </h1>
 
-                <TabsContent value="media" className="m-0">
-                  <ProfileEmptyState text="No media yet" />
-                </TabsContent>
-              </Tabs>
+                <p className="mt-1 text-sm font-medium text-slate-500">
+                  @{profile.username}
+                </p>
+
+                <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-600">
+                  {profile.bio ||
+                    "No bio yet. Tell the fishing community about yourself."}
+                </p>
+
+                <div className="mt-4 flex items-center gap-2 text-sm text-slate-500">
+                  <MapPin className="size-4" />
+
+                  <span>Fishing enthusiast</span>
+                </div>
+              </div>
+
+              {/* EDIT */}
+              <Button
+                type="button"
+                variant="outline"
+                onClick={openEditProfile}
+                className="shrink-0 rounded-xl"
+              >
+                <Pencil className="mr-2 size-4" />
+                Edit Profile
+              </Button>
+            </div>
+
+            {/* STATS */}
+            <div className="mt-8 flex gap-10 border-t border-slate-100 pt-6">
+              <div>
+                <p className="text-xl font-bold text-slate-900">
+                  {profile.followers_count}
+                </p>
+
+                <p className="text-sm text-slate-500">Followers</p>
+              </div>
+
+              <div>
+                <p className="text-xl font-bold text-slate-900">
+                  {profile.following_count}
+                </p>
+
+                <p className="text-sm text-slate-500">Following</p>
+              </div>
+
+              <div>
+                <p className="text-xl font-bold text-slate-900">
+                  {profile.relationship === "SELF"
+                    ? "You"
+                    : profile.relationship}
+                </p>
+
+                <p className="text-sm text-slate-500">Relationship</p>
+              </div>
             </div>
           </div>
         </section>
 
-        {/* RIGHT SIDEBAR */}
-        <aside className="border-l border-slate-200 bg-white">
-          <div className="sticky top-0 p-6">
-            <div className="rounded-2xl bg-slate-50 p-5">
-              <p className="text-sm font-semibold">Suggested Anglers</p>
+        {/* PROFILE CONTENT */}
+        <section className="mt-6 grid grid-cols-2 gap-6">
+          <div className="rounded-3xl border border-slate-200 bg-white p-6">
+            <div className="mb-4 flex items-center gap-3">
+              <div className="flex size-10 items-center justify-center rounded-xl bg-slate-100">
+                <Users className="size-5 text-slate-700" />
+              </div>
 
-              <p className="mt-2 text-xs leading-5 text-slate-500">
-                Discover anglers and fishing communities around you.
-              </p>
+              <div>
+                <h3 className="font-semibold text-slate-900">Community</h3>
 
-              <Button variant="outline" className="mt-4 w-full rounded-xl">
-                Explore
-              </Button>
+                <p className="text-sm text-slate-500">Your fishing network</p>
+              </div>
             </div>
+
+            <p className="text-sm leading-6 text-slate-600">
+              Connect with anglers, share catches, discover fishing spots and
+              join the community.
+            </p>
           </div>
-        </aside>
+
+          <div className="rounded-3xl border border-slate-200 bg-white p-6">
+            <div className="mb-4 flex items-center gap-3">
+              <div className="flex size-10 items-center justify-center rounded-xl bg-slate-100">
+                <MapPin className="size-5 text-slate-700" />
+              </div>
+
+              <div>
+                <h3 className="font-semibold text-slate-900">Fishing Spots</h3>
+
+                <p className="text-sm text-slate-500">
+                  Explore your favorite places
+                </p>
+              </div>
+            </div>
+
+            <p className="text-sm leading-6 text-slate-600">
+              Discover fishing locations and share your experience with other
+              anglers.
+            </p>
+          </div>
+        </section>
       </div>
+
+      {/* EDIT PROFILE DIALOG */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Edit Profile</DialogTitle>
+
+            <DialogDescription>
+              Update your profile information.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {/* AVATAR */}
+            <div className="flex items-center gap-4">
+              <Avatar className="size-20">
+                <AvatarImage
+                  src={previewAvatar ?? undefined}
+                  alt={displayName}
+                />
+
+                <AvatarFallback>{initials}</AvatarFallback>
+              </Avatar>
+
+              <div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  onChange={handleAvatarChange}
+                  className="hidden"
+                />
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <Camera className="mr-2 size-4" />
+                  Change Photo
+                </Button>
+
+                <p className="mt-2 text-xs text-slate-500">
+                  JPG, PNG or WebP. Max 15MB.
+                </p>
+              </div>
+            </div>
+
+            {/* DISPLAY NAME */}
+            <div className="space-y-2">
+              <label
+                htmlFor="desktop-display-name"
+                className="text-sm font-medium"
+              >
+                Display Name
+              </label>
+
+              <Input
+                id="desktop-display-name"
+                value={displayName}
+                onChange={(event) => setDisplayName(event.target.value)}
+                placeholder="Your display name"
+                disabled={saving}
+              />
+            </div>
+
+            {/* USERNAME */}
+            <div className="space-y-2">
+              <label htmlFor="desktop-username" className="text-sm font-medium">
+                Username
+              </label>
+
+              <Input
+                id="desktop-username"
+                value={`@${profile.username}`}
+                disabled
+                className="bg-slate-50"
+              />
+
+              <p className="text-xs text-slate-500">
+                Username is managed by the account system.
+              </p>
+            </div>
+
+            {/* BIO */}
+            <div className="space-y-2">
+              <label htmlFor="desktop-bio" className="text-sm font-medium">
+                Bio
+              </label>
+
+              <Textarea
+                id="desktop-bio"
+                value={bio}
+                onChange={(event) => setBio(event.target.value)}
+                placeholder="Tell the fishing community about yourself..."
+                rows={4}
+                disabled={saving}
+              />
+            </div>
+
+            {formError && (
+              <p className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600">
+                {formError}
+              </p>
+            )}
+
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setEditOpen(false)}
+                disabled={saving}
+              >
+                Cancel
+              </Button>
+
+              <Button type="submit" disabled={saving}>
+                {saving ? "Saving..." : "Save Changes"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </main>
-  );
-}
-
-function ProfileEmptyState({ text = "No posts yet" }: { text?: string }) {
-  return (
-    <div className="flex min-h-[420px] flex-col items-center justify-center px-6 text-center">
-      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50 text-3xl">
-        🎣
-      </div>
-
-      <h3 className="mt-5 text-lg font-semibold text-slate-900">{text}</h3>
-
-      <p className="mt-2 max-w-sm text-sm leading-6 text-slate-500">
-        Share your latest catch, fishing spot, or story with the fishing
-        community.
-      </p>
-
-      <Button className="mt-5 rounded-xl bg-emerald-600 hover:bg-emerald-700">
-        Create Post
-      </Button>
-    </div>
   );
 }

@@ -65,12 +65,50 @@ export function loginWithGoogle() {
  * GET SESSION
  * ==============================
  */
-export async function getSession() {
-  return apiFetch<SessionResponse>("/auth/session", {
-    method: "GET",
-  });
+// lib/api/auth.ts
+
+if (!API_BASE_URL) {
+  throw new Error("NEXT_PUBLIC_API_BASE_URL is not defined");
 }
 
+export async function getSession() {
+  const url = `${API_BASE_URL}/auth/session`;
+
+  console.log("=================================");
+  console.log("GET SESSION");
+  console.log("URL:", url);
+  console.log("=================================");
+
+  const response = await fetch(url, {
+    method: "GET",
+
+    credentials: "include",
+
+    cache: "no-store",
+
+    headers: {
+      Accept: "application/json",
+    },
+  });
+
+  const result = await response.json().catch(() => null);
+
+  console.log("SESSION STATUS:", response.status);
+
+  console.log("SESSION RESPONSE:", result);
+
+  if (response.status === 401) {
+    return null;
+  }
+
+  if (!response.ok) {
+    throw new Error(
+      typeof result === "string" ? result : JSON.stringify(result),
+    );
+  }
+
+  return result;
+}
 /**
  * ==============================
  * GET CURRENT USER
