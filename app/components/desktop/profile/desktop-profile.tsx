@@ -16,15 +16,15 @@ export default function DesktopProfile({
   onUpdateProfile,
 }: DesktopProfileProps) {
   return (
-    <main className="min-h-screen bg-white dark:bg-slate-950 text-slate-900 dark:text-white transition-colors duration-200">
-      <div className="mx-auto max-w-6xl grid min-h-screen grid-cols-[240px_minmax(0,680px)] justify-center gap-10 px-6 py-4">
+    <main className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white transition-colors duration-200">
+      <div className="mx-auto max-w-[1400px] grid grid-cols-[240px_minmax(0,680px)_300px] gap-8 px-8 py-8">
         {/* DESKTOP LEFT SIDEBAR */}
         <aside className="border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950">
           <DesktopSidebar />
         </aside>
 
         {/* THREADS PROFILE MAIN VIEW */}
-        <section className="min-w-0 max-w-xl w-full py-6">
+        <section className="min-w-0 max-w-3xl w-full min-h-screen">
           <ThreadsProfileView
             profile={profile}
             saving={saving}

@@ -196,7 +196,7 @@ export function ThreadsProfileView({
   };
 
   return (
-    <div className="w-full max-w-xl mx-auto">
+    <div className="mx-auto rounded-3xl border-slate-100 bg-white shadow-sm p-6">
       {/* Toast Notification */}
       {toastMessage && (
         <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-2xl bg-slate-900 px-4 py-3 text-sm text-white shadow-xl dark:bg-white dark:text-slate-900 animate-in fade-in slide-in-from-bottom-2">
@@ -403,11 +403,10 @@ export function ThreadsProfileView({
                 key={tab.id}
                 type="button"
                 onClick={() => setActiveTab(tab.id)}
-                className={`py-2.5 text-center text-sm font-semibold rounded-xl transition-all ${
-                  isActive
-                    ? "bg-slate-200 dark:bg-slate-800 text-slate-900 dark:text-white shadow-xs"
-                    : "text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
-                }`}
+                className={`py-2.5 text-center text-sm font-semibold rounded-xl transition-all ${isActive
+                  ? "bg-slate-200 dark:bg-slate-800 text-slate-900 dark:text-white shadow-xs"
+                  : "text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+                  }`}
               >
                 {tab.label}
               </button>

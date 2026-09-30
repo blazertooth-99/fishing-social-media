@@ -1,15 +1,6 @@
 "use client";
 
-import {
-  Compass,
-  Fish,
-  Home,
-  MapPinned,
-  MessageCircle,
-  Settings,
-  Users,
-  UserRound,
-} from "lucide-react";
+import { Settings } from "lucide-react";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
@@ -17,19 +8,22 @@ import Logo from "@/assets/image/logo/logo_black_500px.png";
 import Image from "next/image";
 import { menuFeed } from "@/app/utils/constant";
 import { LogOut } from "lucide-react";
-import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 // import { useAuth } from "@/hooks/use-auth";
 
 const Sidebar = () => {
   const pathname = usePathname();
+  const router = useRouter();
   // const { logout, user } = useAuth();
 
   return (
     <div className="sticky top-0 flex h-screen flex-col px-5 py-7 bg-white dark:bg-slate-950 text-slate-900 dark:text-white">
       {/* LOGO */}
-      <div className="mb-10 flex items-center gap-3">
+      <div
+        onClick={() => router.push("/feed")}
+        className="mb-10 flex items-center gap-3 cursor-pointer"
+      >
         <div className="flex h-10 w-10 items-center justify-center rounded-[100px] bg-icon text-white shadow-lg shadow-blue-600/20">
           <Image
             src={Logo}
@@ -57,43 +51,34 @@ const Sidebar = () => {
           return (
             <Button
               key={item.label}
+              onClick={() => router.push(item.link)}
               className={`
-                        group relative w-full justify-start items-center gap-3
-                        rounded-2xl px-5 py-5
-                        text-base font-medium transition-all duration-200
-                        ${
-                          isActive
-                            ? "bg-primary-hover/S0 text-tactive"
-                            : "bg-transparent text-tinactive hover:bg-primary-hover/20"
-                        }
-                      `}
+                group relative w-full justify-start items-center gap-3
+                rounded-2xl px-2 py-2 h-auto cursor-pointer
+                text-base font-medium transition-all duration-200
+                ${isActive
+                  ? "bg-primary-hover/50 text-tactive"
+                  : "bg-transparent text-tinactive hover:bg-primary-hover/20 hover:text-thover"
+                }
+              `}
             >
-              <Link href={item.link}>
-                <div className="flex items-center gap-3">
-                  <Icon
-                    size={19}
-                    className={`transition-transform duration-200"
-                          ${
-                            isActive
-                              ? "text-tactive"
-                              : "text-tinactive group-hover:scale-110 group-hover:text-tactive"
-                          }
-                      `}
-                  />
+              <Icon
+                size={19}
+                className={`transition-transform duration-200 ${isActive
+                  ? "text-tactive"
+                  : "text-tinactive group-hover:scale-110 group-hover:text-tactive"
+                  }`}
+              />
 
-                  <label
-                    className={`
-                                      ${
-                                        isActive
-                                          ? "font-semibold text-tactive"
-                                          : "text-tinactive group-hover:text-tactive"
-                                      }
-                    `}
-                  >
-                    {item.label}
-                  </label>
-                </div>
-              </Link>
+              <span
+                className={
+                  isActive
+                    ? "font-semibold text-tactive"
+                    : "text-tinactive group-hover:text-tactive"
+                }
+              >
+                {item.label}
+              </span>
             </Button>
           );
         })}
@@ -132,12 +117,35 @@ const Sidebar = () => {
 
       {/* BOTTOM */}
       <div className="mt-auto">
-        <Link href="/settings">
-          <button className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-base text-tinactive hover:bg-icon/10 hover:text-thover">
-            <Settings size={20} />
+        <Button
+          onClick={() => router.push("/settings")}
+          className={`
+            group relative w-full justify-start items-center gap-3
+            rounded-2xl px-5 py-5 h-auto cursor-pointer
+            text-base font-medium transition-all duration-200
+            ${pathname === "/settings"
+              ? "bg-primary-hover/50 text-tactive"
+              : "bg-transparent text-tinactive hover:bg-primary-hover/20 hover:text-thover"
+            }
+          `}
+        >
+          <Settings
+            size={19}
+            className={`transition-transform duration-200 ${pathname === "/settings"
+              ? "text-tactive"
+              : "text-tinactive group-hover:scale-110 group-hover:text-tactive"
+              }`}
+          />
+          <span
+            className={
+              pathname === "/settings"
+                ? "font-semibold text-tactive"
+                : "text-tinactive group-hover:text-tactive"
+            }
+          >
             Settings
-          </button>
-        </Link>
+          </span>
+        </Button>
 
         {/* <div className="mt-4 flex flex-col gap-2 rounded-2xl p-2 hover:bg-slate-50">
           <div className="flex items-center gap-3">

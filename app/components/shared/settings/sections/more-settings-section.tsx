@@ -187,11 +187,10 @@ export function MoreSettingsSection() {
                   setThemeMode(mode.id as any);
                   showToast(`Tema diubah ke ${mode.label}`);
                 }}
-                className={`flex flex-col items-center justify-center gap-2 rounded-2xl border p-4 text-center transition-all ${
-                  isSelected
-                    ? "border-slate-900 bg-slate-900 text-white shadow-sm"
-                    : "border-slate-200 bg-slate-50/50 text-slate-700 hover:bg-slate-100"
-                }`}
+                className={`flex flex-col items-center justify-center gap-2 rounded-2xl border p-4 text-center transition-all ${isSelected
+                  ? "border-slate-900 bg-slate-900 text-white shadow-sm"
+                  : "border-slate-200 bg-slate-50/50 text-slate-700 hover:bg-slate-100"
+                  }`}
               >
                 <Icon size={20} />
                 <span className="text-xs font-semibold">{mode.label}</span>
@@ -278,9 +277,8 @@ export function MoreSettingsSection() {
                 setLanguage("id");
                 showToast("Bahasa diatur ke Bahasa Indonesia");
               }}
-              className={`rounded-lg px-3 py-1 text-xs font-semibold transition-all ${
-                language === "id" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"
-              }`}
+              className={`rounded-lg px-3 py-1 text-xs font-semibold transition-all ${language === "id" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"
+                }`}
             >
               ID
             </button>
@@ -290,9 +288,8 @@ export function MoreSettingsSection() {
                 setLanguage("en");
                 showToast("Language set to English");
               }}
-              className={`rounded-lg px-3 py-1 text-xs font-semibold transition-all ${
-                language === "en" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"
-              }`}
+              className={`rounded-lg px-3 py-1 text-xs font-semibold transition-all ${language === "en" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"
+                }`}
             >
               EN
             </button>
@@ -319,9 +316,8 @@ export function MoreSettingsSection() {
                 setUnitSystem("metric");
                 showToast("Satuan metrik (kg/cm) diterapkan");
               }}
-              className={`rounded-lg px-3 py-1 text-xs font-semibold transition-all ${
-                unitSystem === "metric" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"
-              }`}
+              className={`rounded-lg px-3 py-1 text-xs font-semibold transition-all ${unitSystem === "metric" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"
+                }`}
             >
               Metrik
             </button>
@@ -331,9 +327,8 @@ export function MoreSettingsSection() {
                 setUnitSystem("imperial");
                 showToast("Satuan imperial (lbs/inch) diterapkan");
               }}
-              className={`rounded-lg px-3 py-1 text-xs font-semibold transition-all ${
-                unitSystem === "imperial" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"
-              }`}
+              className={`rounded-lg px-3 py-1 text-xs font-semibold transition-all ${unitSystem === "imperial" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"
+                }`}
             >
               Imperial
             </button>
@@ -370,30 +365,32 @@ export function MoreSettingsSection() {
         </div>
 
         {/* Change Password */}
-        <button
-          type="button"
-          onClick={() => setIsPasswordModalOpen(true)}
-          className="flex w-full items-center justify-between p-5 text-left transition-colors hover:bg-slate-50/80"
-        >
-          <div className="flex items-center gap-4">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-700">
-              <KeyRound size={20} strokeWidth={1.8} />
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-slate-900">Ubah Kata Sandi</p>
-              <p className="mt-0.5 text-xs text-slate-500">
-                Perbarui kata sandi akun untuk menjaga keamanan
-              </p>
-            </div>
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
-            className="rounded-full border-slate-200 text-xs font-medium text-slate-700"
+        <div>
+          <button
+            type="button"
+            onClick={() => setIsPasswordModalOpen(true)}
+            className="flex w-full items-center justify-between p-5 text-left transition-colors hover:bg-slate-50/80"
           >
-            Ubah
-          </Button>
-        </button>
+            <div className="flex items-center gap-4">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-700">
+                <KeyRound size={20} strokeWidth={1.8} />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-slate-900">Ubah Kata Sandi</p>
+                <p className="mt-0.5 text-xs text-slate-500">
+                  Perbarui kata sandi akun untuk menjaga keamanan
+                </p>
+              </div>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="rounded-full border-slate-200 text-xs font-medium text-slate-700"
+            >
+              Ubah
+            </Button>
+          </button>
+        </div>
       </div>
 
       {/* Password Modal */}

@@ -16,6 +16,7 @@ import {
 
 import { uploadMedia } from "@/lib/api/media";
 import { getSessionToken } from "@/lib/api/client";
+import DesktopSidebar from "../../desktop/desktop-sidebar";
 
 export interface ProfileUpdateData {
   display_name: string;
@@ -131,13 +132,18 @@ export default function ProfileController() {
    */
   if (loading) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-white dark:bg-slate-950">
-        <div className="text-center">
-          <div className="mx-auto mb-4 size-8 animate-spin rounded-full border-4 border-slate-200 dark:border-slate-800 border-t-emerald-500" />
+      <main className="min-h-screen items-center justify-center bg-white dark:bg-slate-950">
+        <div className="mx-auto max-w-[1400px] grid grid-cols-[240px_minmax(0,680px)_300px] gap-8 px-8 py-8">
+          <aside className="border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950">
+            <DesktopSidebar />
+          </aside>
+          <div className="flex w-full flex-col items-center justify-center">
+            <div className=" mx-auto mb-4 size-8 animate-spin rounded-full border-4 border-slate-200 dark:border-slate-800 border-t-blue-300" />
 
-          <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
-            Loading your profile...
-          </p>
+            <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
+              Loading your profile...
+            </p>
+          </div>
         </div>
       </main>
     );
