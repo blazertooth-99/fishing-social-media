@@ -1,6 +1,6 @@
 // lib/api/profile.ts
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+import { getAuthHeaders, API_BASE_URL } from "./client";
 
 if (!API_BASE_URL) {
   throw new Error("NEXT_PUBLIC_API_BASE_URL is not defined");
@@ -91,9 +91,7 @@ export async function getMyProfile(): Promise<UserProfile> {
     method: "GET",
     credentials: "include",
     cache: "no-store",
-    headers: {
-      Accept: "application/json",
-    },
+    headers: getAuthHeaders(),
   });
 
   const result: unknown = await response.json().catch(() => null);
@@ -148,10 +146,9 @@ export async function updateMyProfile(
 
     credentials: "include",
 
-    headers: {
-      Accept: "application/json",
+    headers: getAuthHeaders({
       "Content-Type": "application/json",
-    },
+    }),
 
     body: JSON.stringify(payload),
   });

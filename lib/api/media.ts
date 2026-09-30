@@ -1,6 +1,6 @@
 // lib/api/media.ts
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+import { getAuthHeaders, API_BASE_URL } from "./client";
 
 if (!API_BASE_URL) {
   throw new Error("NEXT_PUBLIC_API_BASE_URL is not defined");
@@ -24,6 +24,7 @@ export async function uploadMedia(file: File): Promise<MediaUploadResponse> {
   const response = await fetch(`${API_BASE_URL}/media/upload`, {
     method: "POST",
     credentials: "include",
+    headers: getAuthHeaders(),
     body: formData,
   });
 

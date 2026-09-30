@@ -1,4 +1,4 @@
-import { apiFetch, API_BASE_URL } from "./client";
+import { apiFetch, API_BASE_URL, getAuthHeaders } from "./client";
 
 /**
  * ==============================
@@ -65,7 +65,6 @@ export function loginWithGoogle() {
  * GET SESSION
  * ==============================
  */
-// lib/api/auth.ts
 
 if (!API_BASE_URL) {
   throw new Error("NEXT_PUBLIC_API_BASE_URL is not defined");
@@ -81,20 +80,14 @@ export async function getSession() {
 
   const response = await fetch(url, {
     method: "GET",
-
     credentials: "include",
-
     cache: "no-store",
-
-    headers: {
-      Accept: "application/json",
-    },
+    headers: getAuthHeaders(),
   });
 
   const result = await response.json().catch(() => null);
 
   console.log("SESSION STATUS:", response.status);
-
   console.log("SESSION RESPONSE:", result);
 
   if (response.status === 401) {
@@ -109,6 +102,7 @@ export async function getSession() {
 
   return result;
 }
+
 /**
  * ==============================
  * GET CURRENT USER
@@ -126,7 +120,13 @@ export async function getCurrentUser() {
  * ==============================
  */
 export async function logout() {
-  return apiFetch<LogoutResponse>("/auth/logout", {
-    method: "POST",
-  });
+  try {
+    return await apiFetch<LogoutResponse>("/auth/logout", {
+      method: "POST",
+    });
+  } finally {
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("fishing_session_token");
+    }
+  }
 }

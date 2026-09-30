@@ -7,6 +7,7 @@ import React, {
   useEffect,
   useState,
 } from "react";
+import { getAuthHeaders } from "@/lib/api/client";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3067/api/v1";
@@ -74,9 +75,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const sessionResponse = await fetch(`${API_BASE_URL}/auth/session`, {
         method: "GET",
         credentials: "include",
-        headers: {
-          Accept: "application/json",
-        },
+        headers: getAuthHeaders(),
         cache: "no-store",
       });
 
@@ -105,9 +104,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const userResponse = await fetch(`${API_BASE_URL}/users/me`, {
         method: "GET",
         credentials: "include",
-        headers: {
-          Accept: "application/json",
-        },
+        headers: getAuthHeaders(),
         cache: "no-store",
       });
 
@@ -200,13 +197,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await fetch(`${API_BASE_URL}/auth/logout`, {
         method: "POST",
         credentials: "include",
-        headers: {
-          Accept: "application/json",
-        },
+        headers: getAuthHeaders(),
       });
     } catch (error) {
       console.error("Logout request failed:", error);
     } finally {
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("fishing_session_token");
+      }
+
       /**
        * Clear frontend state regardless
        * whether backend logout succeeds.

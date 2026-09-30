@@ -27,7 +27,7 @@ const Sidebar = () => {
   // const { logout, user } = useAuth();
 
   return (
-    <div className="sticky top-0 flex h-screen flex-col px-5 py-7">
+    <div className="sticky top-0 flex h-screen flex-col px-5 py-7 bg-white dark:bg-slate-950 text-slate-900 dark:text-white">
       {/* LOGO */}
       <div className="mb-10 flex items-center gap-3">
         <div className="flex h-10 w-10 items-center justify-center rounded-[100px] bg-icon text-white shadow-lg shadow-blue-600/20">
@@ -40,7 +40,7 @@ const Sidebar = () => {
         </div>
 
         <div>
-          <h1 className="font-bold tracking-tight text-slate-900">
+          <h1 className="font-bold tracking-tight text-slate-900 dark:text-white">
             FishConnect
           </h1>
 

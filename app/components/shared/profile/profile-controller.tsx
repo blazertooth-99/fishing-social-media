@@ -3,6 +3,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 import DesktopProfile from "@/app/components/desktop/profile/desktop-profile";
 import MobileProfile from "@/app/components/mobile/profile/mobile-profile";
@@ -14,6 +15,7 @@ import {
 } from "@/lib/api/profile";
 
 import { uploadMedia } from "@/lib/api/media";
+import { getSessionToken } from "@/lib/api/client";
 
 export interface ProfileUpdateData {
   display_name: string;
@@ -22,11 +24,11 @@ export interface ProfileUpdateData {
 }
 
 export default function ProfileController() {
-  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const router = useRouter();
 
+  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-
   const [error, setError] = useState<string | null>(null);
 
   /**
@@ -37,6 +39,13 @@ export default function ProfileController() {
       setLoading(true);
       setError(null);
 
+      const token = getSessionToken();
+      if (!token) {
+        console.warn("No session token found, redirecting to /login");
+        router.replace("/login");
+        return;
+      }
+
       const profileData = await getMyProfile();
 
       console.log("PROFILE DATA:", profileData);
@@ -45,13 +54,23 @@ export default function ProfileController() {
     } catch (error) {
       console.error("PROFILE LOAD ERROR:", error);
 
+      const message = error instanceof Error ? error.message : String(error);
+      if (
+        message.includes("401") ||
+        message.toLowerCase().includes("unauthorized")
+      ) {
+        console.warn("Session expired or unauthorized (401), redirecting to /login");
+        router.replace("/login");
+        return;
+      }
+
       setError(
         error instanceof Error ? error.message : "Failed to load profile.",
       );
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [router]);
 
   /**
    * Initial load
@@ -112,11 +131,11 @@ export default function ProfileController() {
    */
   if (loading) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-slate-50">
+      <main className="flex min-h-screen items-center justify-center bg-white dark:bg-slate-950">
         <div className="text-center">
-          <div className="mx-auto mb-4 size-8 animate-spin rounded-full border-4 border-slate-200 border-t-emerald-500" />
+          <div className="mx-auto mb-4 size-8 animate-spin rounded-full border-4 border-slate-200 dark:border-slate-800 border-t-emerald-500" />
 
-          <p className="text-sm font-medium text-slate-500">
+          <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
             Loading your profile...
           </p>
         </div>
@@ -129,25 +148,34 @@ export default function ProfileController() {
    */
   if (!profile) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-slate-50 px-6">
+      <main className="flex min-h-screen items-center justify-center bg-white dark:bg-slate-950 px-6">
         <div className="max-w-md text-center">
           <div className="mb-4 text-4xl">🎣</div>
 
-          <h1 className="mb-2 text-xl font-bold text-slate-900">
+          <h1 className="mb-2 text-xl font-bold text-slate-900 dark:text-white">
             Unable to load profile
           </h1>
 
-          <p className="mb-6 text-sm text-slate-500">
+          <p className="mb-6 text-sm text-slate-500 dark:text-slate-400">
             {error ?? "Profile data is unavailable."}
           </p>
 
-          <button
-            type="button"
-            onClick={loadProfile}
-            className="rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
-          >
-            Try Again
-          </button>
+          <div className="flex items-center justify-center gap-3">
+            <button
+              type="button"
+              onClick={loadProfile}
+              className="rounded-xl bg-slate-900 dark:bg-white dark:text-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
+            >
+              Try Again
+            </button>
+            <button
+              type="button"
+              onClick={() => router.replace("/login")}
+              className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-5 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 transition hover:bg-slate-100 dark:hover:bg-slate-800"
+            >
+              Log In
+            </button>
+          </div>
         </div>
       </main>
     );

@@ -1,3 +1,5 @@
+import type { ApiResponse, SessionData, User } from "@/types/auth";
+
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ||
   "https://api-fishing.janissaryid.com/api/v1";

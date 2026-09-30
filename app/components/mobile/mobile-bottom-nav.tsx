@@ -27,7 +27,7 @@ import { navigation } from "@/app/utils/constant";
 
 export default function MobileBottomNav() {
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-slate-200 bg-white/95 px-2 pb-[env(safe-area-inset-bottom)] pt-2 shadow-[0_-5px_20px_rgba(15,23,42,0.08)] backdrop-blur-xl">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-950/95 px-2 pb-[env(safe-area-inset-bottom)] pt-2 shadow-[0_-5px_20px_rgba(15,23,42,0.08)] backdrop-blur-xl">
       <div className="mx-auto flex max-w-md items-center justify-between gap-2 py-2">
         {navigation.map((item) => {
           const Icon = item.icon;
