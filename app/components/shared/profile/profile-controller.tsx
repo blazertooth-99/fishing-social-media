@@ -14,7 +14,7 @@ import {
   type UserProfile,
 } from "@/lib/api/profile";
 
-import { uploadMedia } from "@/lib/api/media";
+import { resolveMediaId, uploadMedia } from "@/lib/api/media";
 import { getSessionToken } from "@/lib/api/client";
 import DesktopSidebar from "../../desktop/desktop-sidebar";
 
@@ -98,7 +98,11 @@ export default function ProfileController() {
       if (data.avatar_file) {
         const uploadedMedia = await uploadMedia(data.avatar_file);
 
-        avatarMediaId = uploadedMedia.id;
+        const resolvedId = resolveMediaId(uploadedMedia);
+        if (!resolvedId) {
+          throw new Error("Avatar upload returned no media id");
+        }
+        avatarMediaId = resolvedId;
       }
 
       /**

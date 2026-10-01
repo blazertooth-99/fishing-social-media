@@ -43,3 +43,6 @@ next-env.d.ts
 
 #next
 .next
+
+#documentation agent
+.agentv1

@@ -1,24 +1,17 @@
 "use client";
 
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import {
   Search,
   MoreHorizontal,
-  Sun,
-  Moon,
-  Monitor,
   Camera,
-  Heart,
-  MessageCircle,
-  Repeat2,
-  Send,
-  Share2,
   Check,
   Link2,
   Settings,
   LogOut,
-  X,
+  Fish,
 } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -42,6 +35,14 @@ import { Textarea } from "@/components/ui/textarea";
 
 import type { UserProfile } from "@/lib/api/profile";
 import { getAvatarUrl } from "@/lib/api/media";
+import {
+  extractApiErrorMessage,
+  getUserPosts,
+  resolveMediaUrl,
+  type ApiPost,
+} from "@/lib/api/posts";
+import DesktopFishingPost from "@/app/components/desktop/desktop-fishing-post";
+import MobileFishingPost from "@/app/components/mobile/mobile-fishing-post";
 // import { useTheme } from "@/app/components/providers/theme-provider";
 import { api } from "@/lib/api";
 
@@ -83,17 +84,40 @@ export function ThreadsProfileView({
   );
   const [formError, setFormError] = useState<string | null>(null);
 
-  // Quick Composer State
-  const [composerText, setComposerText] = useState("");
-  const [userPosts, setUserPosts] = useState<
-    {
-      id: string;
-      content: string;
-      createdAt: string;
-      likes: number;
-      replies: number;
-    }[]
-  >([]);
+  // Real posts by this user (GET /api/v1/feed filtered by author_id).
+  // A post created on /feed appears here automatically on next load.
+  const [userPosts, setUserPosts] = useState<ApiPost[]>([]);
+  const [postsLoading, setPostsLoading] = useState(true);
+  const [postsError, setPostsError] = useState<string | null>(null);
+
+  const loadUserPosts = React.useCallback(async () => {
+    try {
+      setPostsLoading(true);
+      setPostsError(null);
+      const mine = await getUserPosts(profile.user_id);
+      setUserPosts(mine);
+    } catch (err) {
+      setPostsError(extractApiErrorMessage(err, "Failed to load posts"));
+    } finally {
+      setPostsLoading(false);
+    }
+  }, [profile.user_id]);
+
+  useEffect(() => {
+    async function init() {
+      await loadUserPosts();
+    }
+
+    init();
+  }, [loadUserPosts]);
+
+  // Edited post (PATCH + re-fetched detail) replaces the item in place.
+  function handlePostUpdated(updated: ApiPost) {
+    setUserPosts((prev) =>
+      prev.map((p) => (p.id === updated.id ? updated : p)),
+    );
+    showToast("Post updated!");
+  }
 
   // Toast / feedback message
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -158,24 +182,6 @@ export function ThreadsProfileView({
       );
     }
   }
-
-  const handleCreatePost = (e: React.FormEvent) => {
-    e.preventDefault();
-    const trimmed = composerText.trim();
-    if (!trimmed) return;
-
-    const newPost = {
-      id: Date.now().toString(),
-      content: trimmed,
-      createdAt: "Baru saja",
-      likes: 0,
-      replies: 0,
-    };
-
-    setUserPosts([newPost, ...userPosts]);
-    setComposerText("");
-    showToast("Kiriman berhasil dibagikan!");
-  };
 
   const handleCopyLink = () => {
     if (typeof window !== "undefined") {
@@ -393,7 +399,7 @@ export function ThreadsProfileView({
       <section className="mt-4 border-b border-slate-200/80 dark:border-slate-800">
         <div className="grid grid-cols-3 gap-2 p-1 bg-slate-100/60 dark:bg-slate-900/60 rounded-2xl">
           {[
-            { id: "post" as const, label: "Post" },
+            { id: "post" as const, label: "Posts" },
             { id: "replies" as const, label: "Replies" },
             { id: "media" as const, label: "Media" },
           ].map((tab) => {
@@ -416,13 +422,10 @@ export function ThreadsProfileView({
       </section>
 
       {/* ========================================================
-          5. COMPOSER BAR ("What's new ?") (Matching Wireframe)
-          - Avatar on left
-          - Input pill: What's new ?
-          - Post button on right
+          5. SHARE CTA (posts require photo + GPS, so creation lives on /feed)
       ======================================================== */}
       <section className="py-4 border-b border-slate-200/80 dark:border-slate-800">
-        <form onSubmit={handleCreatePost} className="flex items-center gap-3">
+        <div className="flex items-center gap-3">
           {/* USER MINI AVATAR */}
           <Avatar className="size-10 shrink-0 ring-1 ring-amber-400 bg-amber-100">
             <AvatarImage
@@ -434,94 +437,134 @@ export function ThreadsProfileView({
             </AvatarFallback>
           </Avatar>
 
-          {/* WHAT'S NEW INPUT PILL */}
-          <div className="relative flex-1">
-            <Input
-              type="text"
-              placeholder="What's new ?"
-              value={composerText}
-              onChange={(e) => setComposerText(e.target.value)}
-              className="h-11 rounded-full border border-slate-200/90 dark:border-slate-700 bg-slate-50/70 dark:bg-slate-900 px-4 text-xs sm:text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus-visible:ring-slate-400"
-            />
-          </div>
+          <button
+            type="button"
+            onClick={() => router.push("/feed")}
+            className="h-11 flex-1 rounded-full border border-slate-200/90 dark:border-slate-700 bg-slate-50/70 dark:bg-slate-900 px-4 text-left text-xs sm:text-sm text-slate-400 transition hover:bg-slate-100 dark:hover:bg-slate-800"
+          >
+            Share your catch… 🎣
+          </button>
 
-          {/* POST BUTTON */}
           <Button
-            type="submit"
-            disabled={!composerText.trim()}
-            className="h-11 px-5 rounded-xl bg-slate-500 hover:bg-slate-600 dark:bg-slate-700 dark:hover:bg-slate-600 text-white font-medium text-xs sm:text-sm transition-all disabled:opacity-40"
+            type="button"
+            onClick={() => router.push("/feed")}
+            className="h-11 px-5 rounded-xl bg-slate-500 hover:bg-slate-600 dark:bg-slate-700 dark:hover:bg-slate-600 text-white font-medium text-xs sm:text-sm transition-all"
           >
             Post
           </Button>
-        </form>
+        </div>
       </section>
 
       {/* ========================================================
-          6. FEED / EMPTY STATE (Matching Wireframe)
-          - Centered text: Post Unavailable
+          6. POSTS / REPLIES / MEDIA TABS (real API data)
       ======================================================== */}
-      <section className="py-12">
-        {userPosts.length > 0 && activeTab === "post" ? (
+      <section className="py-6">
+        {postsLoading ? (
           <div className="space-y-4">
-            {userPosts.map((post) => (
+            {Array.from({ length: 2 }).map((_, i) => (
               <div
-                key={post.id}
-                className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs dark:border-slate-800 dark:bg-slate-900"
+                key={i}
+                className="animate-pulse rounded-2xl border border-slate-200/80 bg-white p-4 dark:border-slate-800 dark:bg-slate-900"
               >
-                <div className="flex items-center gap-3">
-                  <Avatar className="size-8 ring-1 ring-amber-400">
-                    <AvatarImage
-                      src={getAvatarUrl(profile.avatar_media_id) ?? undefined}
-                    />
-                    <AvatarFallback>{initials}</AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <p className="text-xs font-bold text-slate-900 dark:text-white">
-                      {profile.display_name}
-                    </p>
-                    <p className="text-[10px] text-slate-400">
-                      {post.createdAt}
-                    </p>
-                  </div>
-                </div>
-
-                <p className="mt-3 text-sm text-slate-800 dark:text-slate-200">
-                  {post.content}
-                </p>
-
-                <div className="mt-4 flex items-center gap-6 text-slate-500 dark:text-slate-400 text-xs">
-                  <button
-                    type="button"
-                    className="flex items-center gap-1.5 hover:text-red-500"
-                  >
-                    <Heart size={16} /> <span>{post.likes}</span>
-                  </button>
-                  <button
-                    type="button"
-                    className="flex items-center gap-1.5 hover:text-blue-500"
-                  >
-                    <MessageCircle size={16} /> <span>{post.replies}</span>
-                  </button>
-                  <button
-                    type="button"
-                    className="flex items-center gap-1.5 hover:text-emerald-500"
-                  >
-                    <Repeat2 size={16} />
-                  </button>
-                  <button
-                    type="button"
-                    className="flex items-center gap-1.5 hover:text-slate-900 dark:hover:text-white"
-                  >
-                    <Share2 size={16} />
-                  </button>
-                </div>
+                <div className="h-3 w-1/3 rounded bg-slate-200 dark:bg-slate-700" />
+                <div className="mt-3 aspect-[4/3] rounded-xl bg-slate-100 dark:bg-slate-800" />
               </div>
             ))}
           </div>
+        ) : postsError ? (
+          <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-center text-xs text-red-600 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
+            <p>{postsError}</p>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={loadUserPosts}
+              className="mt-2 rounded-full"
+            >
+              Try again
+            </Button>
+          </div>
+        ) : activeTab === "post" ? (
+          userPosts.length > 0 ? (
+            <div className="space-y-4">
+              {userPosts.map((post) =>
+                isDesktop ? (
+                  <DesktopFishingPost
+                    key={post.id}
+                    post={post}
+                    currentUserId={profile.user_id}
+                    onPostUpdated={handlePostUpdated}
+                  />
+                ) : (
+                  <MobileFishingPost
+                    key={post.id}
+                    post={post}
+                    currentUserId={profile.user_id}
+                    onPostUpdated={handlePostUpdated}
+                  />
+                ),
+              )}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <Fish
+                size={32}
+                className="mb-3 text-slate-300 dark:text-slate-600"
+              />
+              <p className="text-xl sm:text-2xl font-normal text-slate-400 dark:text-slate-500 select-none">
+                No posts yet
+              </p>
+              <p className="mt-2 text-xs text-slate-400">
+                Posts you share from the Home feed will appear here.
+              </p>
+            </div>
+          )
+        ) : activeTab === "media" ? (
+          (() => {
+            const withMedia = userPosts.filter(
+              (p) => (p.media?.length ?? 0) > 0,
+            );
+            if (withMedia.length === 0) {
+              return (
+                <div className="flex flex-col items-center justify-center py-20 text-center">
+                  <p className="text-xl sm:text-2xl font-normal text-slate-400 dark:text-slate-500 select-none">
+                    No media yet
+                  </p>
+                </div>
+              );
+            }
+            return (
+              <div className="grid grid-cols-3 gap-2">
+                {withMedia.flatMap((p) =>
+                  p.media.map((m) => {
+                    const src = resolveMediaUrl(
+                      m.thumbnail_url || m.display_url,
+                    );
+                    if (!src) return null;
+                    return (
+                      <div
+                        key={`${p.id}-${m.id}`}
+                        className="relative aspect-square overflow-hidden rounded-xl bg-slate-100 dark:bg-slate-800"
+                      >
+                        <Image
+                          src={src}
+                          alt={`Catch by ${p.author_display_name}`}
+                          fill
+                          sizes="(max-width: 768px) 33vw, 220px"
+                          className="object-cover"
+                          unoptimized
+                        />
+                      </div>
+                    );
+                  }),
+                )}
+              </div>
+            );
+          })()
         ) : (
           <div className="flex flex-col items-center justify-center py-20 text-center">
             <p className="text-xl sm:text-2xl font-normal text-slate-400 dark:text-slate-500 select-none">
-              Post Unavailable
+              No replies yet
             </p>
           </div>
         )}

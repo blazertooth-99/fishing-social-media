@@ -7,10 +7,20 @@ if (!API_BASE_URL) {
 }
 
 export interface MediaUploadResponse {
-  id: string;
+  /** Backend returns `media_id` (see live response); keep `id` as fallback. */
+  media_id: string;
+  id?: string;
   display_url?: string;
   thumbnail_url?: string;
+  width?: number | null;
+  height?: number | null;
   [key: string]: unknown;
+}
+
+/** Resolve the media identifier regardless of backend field naming. */
+export function resolveMediaId(uploaded: MediaUploadResponse): string | null {
+  const raw = uploaded?.media_id ?? uploaded?.id;
+  return typeof raw === "string" && raw.length > 0 ? raw : null;
 }
 
 /**
@@ -34,11 +44,13 @@ export async function uploadMedia(file: File): Promise<MediaUploadResponse> {
   console.log("MEDIA UPLOAD RESPONSE:", result);
 
   if (!response.ok) {
-    throw new Error(
-      result?.message ??
-        result?.error ??
-        `Failed to upload media: ${response.status}`,
-    );
+    // Throw structured { status, data } (same shape as apiFetch) so callers
+    // can surface backend `error.details` (e.g. 422 validation) instead of
+    // "[object Object]".
+    throw {
+      status: response.status,
+      data: result,
+    };
   }
 
   if (!result?.data) {
