@@ -28,7 +28,9 @@ export function MoreSettingsSection() {
   const [notifyMessages, setNotifyMessages] = useState(true);
 
   // Appearance state
-  const [themeMode, setThemeMode] = useState<"light" | "dark" | "system">("light");
+  const [themeMode, setThemeMode] = useState<"light" | "dark" | "system">(
+    "light",
+  );
 
   // Media & Data state
   const [uploadHighestQuality, setUploadHighestQuality] = useState(true);
@@ -95,7 +97,9 @@ export function MoreSettingsSection() {
               <Bell size={20} strokeWidth={1.8} />
             </div>
             <div>
-              <p className="text-sm font-semibold text-slate-900">Jeda Semua Notifikasi</p>
+              <p className="text-sm font-semibold text-slate-900">
+                Jeda Semua Notifikasi
+              </p>
               <p className="mt-0.5 text-xs text-slate-500">
                 Hentikan sementara semua push notifikasi pada perangkat ini
               </p>
@@ -105,7 +109,9 @@ export function MoreSettingsSection() {
             checked={pauseAll}
             onCheckedChange={(val) => {
               setPauseAll(val);
-              showToast(val ? "Semua notifikasi dijeda" : "Notifikasi kembali aktif");
+              showToast(
+                val ? "Semua notifikasi dijeda" : "Notifikasi kembali aktif",
+              );
             }}
           />
         </div>
@@ -115,8 +121,12 @@ export function MoreSettingsSection() {
           <>
             <div className="flex items-center justify-between gap-4 px-5 py-4 pl-16">
               <div>
-                <p className="text-sm font-medium text-slate-800">Suka & Reaksi Tangkapan</p>
-                <p className="text-xs text-slate-400">Saat seseorang menyukai foto ikan Anda</p>
+                <p className="text-sm font-medium text-slate-800">
+                  Suka & Reaksi Tangkapan
+                </p>
+                <p className="text-xs text-slate-400">
+                  Saat seseorang menyukai foto ikan Anda
+                </p>
               </div>
               <SettingsToggle
                 checked={notifyLikes}
@@ -126,8 +136,12 @@ export function MoreSettingsSection() {
 
             <div className="flex items-center justify-between gap-4 px-5 py-4 pl-16">
               <div>
-                <p className="text-sm font-medium text-slate-800">Komentar & Diskusi Spot</p>
-                <p className="text-xs text-slate-400">Saat seseorang menanyakan umpan atau membalas tips</p>
+                <p className="text-sm font-medium text-slate-800">
+                  Komentar & Diskusi Spot
+                </p>
+                <p className="text-xs text-slate-400">
+                  Saat seseorang menanyakan umpan atau membalas tips
+                </p>
               </div>
               <SettingsToggle
                 checked={notifyComments}
@@ -137,8 +151,12 @@ export function MoreSettingsSection() {
 
             <div className="flex items-center justify-between gap-4 px-5 py-4 pl-16">
               <div>
-                <p className="text-sm font-medium text-slate-800">Pengikut Baru</p>
-                <p className="text-xs text-slate-400">Saat angler lain mulai mengikuti profil Anda</p>
+                <p className="text-sm font-medium text-slate-800">
+                  Pengikut Baru
+                </p>
+                <p className="text-xs text-slate-400">
+                  Saat angler lain mulai mengikuti profil Anda
+                </p>
               </div>
               <SettingsToggle
                 checked={notifyFollows}
@@ -148,8 +166,12 @@ export function MoreSettingsSection() {
 
             <div className="flex items-center justify-between gap-4 px-5 py-4 pl-16">
               <div>
-                <p className="text-sm font-medium text-slate-800">Pesan & Ajakan Mancing</p>
-                <p className="text-xs text-slate-400">Pemberitahuan pesan obrolan langsung</p>
+                <p className="text-sm font-medium text-slate-800">
+                  Pesan & Ajakan Mancing
+                </p>
+                <p className="text-xs text-slate-400">
+                  Pemberitahuan pesan obrolan langsung
+                </p>
               </div>
               <SettingsToggle
                 checked={notifyMessages}
@@ -166,7 +188,9 @@ export function MoreSettingsSection() {
       </h3>
 
       <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
-        <p className="text-sm font-semibold text-slate-900">Pilih Tema Aplikasi</p>
+        <p className="text-sm font-semibold text-slate-900">
+          Pilih Tema Aplikasi
+        </p>
         <p className="mt-0.5 text-xs text-slate-500">
           Sesuaikan nuansa tampilan visual layar Anda
         </p>
@@ -187,10 +211,11 @@ export function MoreSettingsSection() {
                   setThemeMode(mode.id as any);
                   showToast(`Tema diubah ke ${mode.label}`);
                 }}
-                className={`flex flex-col items-center justify-center gap-2 rounded-2xl border p-4 text-center transition-all ${isSelected
-                  ? "border-slate-900 bg-slate-900 text-white shadow-sm"
-                  : "border-slate-200 bg-slate-50/50 text-slate-700 hover:bg-slate-100"
-                  }`}
+                className={`flex flex-col items-center justify-center gap-2 rounded-2xl border p-4 text-center transition-all ${
+                  isSelected
+                    ? "border-slate-900 bg-slate-900 text-white shadow-sm"
+                    : "border-slate-200 bg-slate-50/50 text-slate-700 hover:bg-slate-100"
+                }`}
               >
                 <Icon size={20} />
                 <span className="text-xs font-semibold">{mode.label}</span>
@@ -213,9 +238,12 @@ export function MoreSettingsSection() {
               <Image size={20} strokeWidth={1.8} />
             </div>
             <div>
-              <p className="text-sm font-semibold text-slate-900">Unggah Kualitas Tertinggi</p>
+              <p className="text-sm font-semibold text-slate-900">
+                Unggah Kualitas Tertinggi
+              </p>
               <p className="mt-0.5 text-xs text-slate-500">
-                Selalu unggah foto tangkapan & video dalam resolusi tertinggi (Full HD)
+                Selalu unggah foto tangkapan & video dalam resolusi tertinggi
+                (Full HD)
               </p>
             </div>
           </div>
@@ -223,7 +251,11 @@ export function MoreSettingsSection() {
             checked={uploadHighestQuality}
             onCheckedChange={(val) => {
               setUploadHighestQuality(val);
-              showToast(val ? "Kualitas unggahan tertinggi aktif" : "Kualitas unggahan standar");
+              showToast(
+                val
+                  ? "Kualitas unggahan tertinggi aktif"
+                  : "Kualitas unggahan standar",
+              );
             }}
           />
         </div>
@@ -235,7 +267,9 @@ export function MoreSettingsSection() {
               <Smartphone size={20} strokeWidth={1.8} />
             </div>
             <div>
-              <p className="text-sm font-semibold text-slate-900">Penghemat Data Seluler</p>
+              <p className="text-sm font-semibold text-slate-900">
+                Penghemat Data Seluler
+              </p>
               <p className="mt-0.5 text-xs text-slate-500">
                 Kurangi resolusi video reels saat tidak tersambung ke Wi-Fi
               </p>
@@ -245,7 +279,9 @@ export function MoreSettingsSection() {
             checked={dataSaver}
             onCheckedChange={(val) => {
               setDataSaver(val);
-              showToast(val ? "Penghemat data aktif" : "Penghemat data nonaktif");
+              showToast(
+                val ? "Penghemat data aktif" : "Penghemat data nonaktif",
+              );
             }}
           />
         </div>
@@ -264,7 +300,9 @@ export function MoreSettingsSection() {
               <Globe size={20} strokeWidth={1.8} />
             </div>
             <div>
-              <p className="text-sm font-semibold text-slate-900">Bahasa Aplikasi</p>
+              <p className="text-sm font-semibold text-slate-900">
+                Bahasa Aplikasi
+              </p>
               <p className="mt-0.5 text-xs text-slate-500">
                 {language === "id" ? "Bahasa Indonesia" : "English (US)"}
               </p>
@@ -277,8 +315,11 @@ export function MoreSettingsSection() {
                 setLanguage("id");
                 showToast("Bahasa diatur ke Bahasa Indonesia");
               }}
-              className={`rounded-lg px-3 py-1 text-xs font-semibold transition-all ${language === "id" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"
-                }`}
+              className={`rounded-lg px-3 py-1 text-xs font-semibold transition-all ${
+                language === "id"
+                  ? "bg-white text-slate-900 shadow-sm"
+                  : "text-slate-500"
+              }`}
             >
               ID
             </button>
@@ -288,8 +329,11 @@ export function MoreSettingsSection() {
                 setLanguage("en");
                 showToast("Language set to English");
               }}
-              className={`rounded-lg px-3 py-1 text-xs font-semibold transition-all ${language === "en" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"
-                }`}
+              className={`rounded-lg px-3 py-1 text-xs font-semibold transition-all ${
+                language === "en"
+                  ? "bg-white text-slate-900 shadow-sm"
+                  : "text-slate-500"
+              }`}
             >
               EN
             </button>
@@ -303,9 +347,13 @@ export function MoreSettingsSection() {
               <Ruler size={20} strokeWidth={1.8} />
             </div>
             <div>
-              <p className="text-sm font-semibold text-slate-900">Satuan Berat & Panjang Tangkapan</p>
+              <p className="text-sm font-semibold text-slate-900">
+                Satuan Berat & Panjang Tangkapan
+              </p>
               <p className="mt-0.5 text-xs text-slate-500">
-                {unitSystem === "metric" ? "Metrik (Kilogram, Centimeter)" : "Imperial (Pound, Inci)"}
+                {unitSystem === "metric"
+                  ? "Metrik (Kilogram, Centimeter)"
+                  : "Imperial (Pound, Inci)"}
               </p>
             </div>
           </div>
@@ -316,8 +364,11 @@ export function MoreSettingsSection() {
                 setUnitSystem("metric");
                 showToast("Satuan metrik (kg/cm) diterapkan");
               }}
-              className={`rounded-lg px-3 py-1 text-xs font-semibold transition-all ${unitSystem === "metric" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"
-                }`}
+              className={`rounded-lg px-3 py-1 text-xs font-semibold transition-all ${
+                unitSystem === "metric"
+                  ? "bg-white text-slate-900 shadow-sm"
+                  : "text-slate-500"
+              }`}
             >
               Metrik
             </button>
@@ -327,8 +378,11 @@ export function MoreSettingsSection() {
                 setUnitSystem("imperial");
                 showToast("Satuan imperial (lbs/inch) diterapkan");
               }}
-              className={`rounded-lg px-3 py-1 text-xs font-semibold transition-all ${unitSystem === "imperial" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"
-                }`}
+              className={`rounded-lg px-3 py-1 text-xs font-semibold transition-all ${
+                unitSystem === "imperial"
+                  ? "bg-white text-slate-900 shadow-sm"
+                  : "text-slate-500"
+              }`}
             >
               Imperial
             </button>
@@ -349,7 +403,9 @@ export function MoreSettingsSection() {
               <Shield size={20} strokeWidth={1.8} />
             </div>
             <div>
-              <p className="text-sm font-semibold text-slate-900">Autentikasi Dua Faktor (2FA)</p>
+              <p className="text-sm font-semibold text-slate-900">
+                Autentikasi Dua Faktor (2FA)
+              </p>
               <p className="mt-0.5 text-xs text-slate-500">
                 Lindungi akun memancing Anda dengan verifikasi keamanan tambahan
               </p>
@@ -366,17 +422,15 @@ export function MoreSettingsSection() {
 
         {/* Change Password */}
         <div>
-          <button
-            type="button"
-            onClick={() => setIsPasswordModalOpen(true)}
-            className="flex w-full items-center justify-between p-5 text-left transition-colors hover:bg-slate-50/80"
-          >
+          <div className="flex w-full items-center justify-between p-5 text-left transition-colors hover:bg-slate-50/80">
             <div className="flex items-center gap-4">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-700">
                 <KeyRound size={20} strokeWidth={1.8} />
               </div>
               <div>
-                <p className="text-sm font-semibold text-slate-900">Ubah Kata Sandi</p>
+                <p className="text-sm font-semibold text-slate-900">
+                  Ubah Kata Sandi
+                </p>
                 <p className="mt-0.5 text-xs text-slate-500">
                   Perbarui kata sandi akun untuk menjaga keamanan
                 </p>
@@ -384,12 +438,13 @@ export function MoreSettingsSection() {
             </div>
             <Button
               variant="outline"
+              onClick={() => setIsPasswordModalOpen(true)}
               size="sm"
               className="rounded-full border-slate-200 text-xs font-medium text-slate-700"
             >
               Ubah
             </Button>
-          </button>
+          </div>
         </div>
       </div>
 
@@ -400,7 +455,9 @@ export function MoreSettingsSection() {
             <div className="flex items-center justify-between border-b border-slate-100 pb-4">
               <div className="flex items-center gap-2">
                 <KeyRound size={20} className="text-slate-700" />
-                <h3 className="text-base font-bold text-slate-900">Perbarui Kata Sandi</h3>
+                <h3 className="text-base font-bold text-slate-900">
+                  Perbarui Kata Sandi
+                </h3>
               </div>
               <Button
                 variant="ghost"
@@ -414,7 +471,9 @@ export function MoreSettingsSection() {
 
             <form onSubmit={handlePasswordChange} className="mt-4 space-y-3">
               <div>
-                <label className="text-xs font-medium text-slate-700">Kata Sandi Saat Ini</label>
+                <label className="text-xs font-medium text-slate-700">
+                  Kata Sandi Saat Ini
+                </label>
                 <Input
                   type="password"
                   value={currentPassword}
@@ -426,7 +485,9 @@ export function MoreSettingsSection() {
               </div>
 
               <div>
-                <label className="text-xs font-medium text-slate-700">Kata Sandi Baru</label>
+                <label className="text-xs font-medium text-slate-700">
+                  Kata Sandi Baru
+                </label>
                 <Input
                   type="password"
                   value={newPassword}
@@ -438,7 +499,9 @@ export function MoreSettingsSection() {
               </div>
 
               <div>
-                <label className="text-xs font-medium text-slate-700">Ulangi Kata Sandi Baru</label>
+                <label className="text-xs font-medium text-slate-700">
+                  Ulangi Kata Sandi Baru
+                </label>
                 <Input
                   type="password"
                   value={confirmPassword}
