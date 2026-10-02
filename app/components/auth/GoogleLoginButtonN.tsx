@@ -13,10 +13,19 @@ declare global {
           initialize: (config: {
             client_id: string;
             callback: (response: { credential: string }) => void;
+            ux_mode?: "popup" | "redirect";
+            auto_select?: boolean;
           }) => void;
-
-          prompt: () => void;
-
+          renderButton: (
+            parent: HTMLElement,
+            options: {
+              theme?: "outline" | "filled_blue" | "filled_black";
+              size?: "large" | "medium" | "small";
+              width?: number;
+              text?: "continue_with" | "signin_with" | "signup_with";
+              shape?: "rectangular" | "pill" | "circle" | "square";
+            },
+          ) => void;
           cancel: () => void;
         };
       };
@@ -25,196 +34,186 @@ declare global {
 }
 
 export default function GoogleLoginButtonN() {
+  const buttonRef = useRef<HTMLDivElement>(null);
   const initializedRef = useRef(false);
 
+  const [gisReady, setGisReady] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (initializedRef.current) {
-      return;
-    }
+    let cancelled = false;
 
-    const initializeGoogle = () => {
-      if (!window.google) {
-        return;
-      }
-
-      if (initializedRef.current) {
+    const renderGisButton = () => {
+      if (
+        cancelled ||
+        !window.google?.accounts?.id ||
+        !buttonRef.current ||
+        initializedRef.current
+      ) {
         return;
       }
 
       const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
 
       if (!clientId) {
-        setError("NEXT_PUBLIC_GOOGLE_CLIENT_ID belum tersedia.");
+        setError("NEXT_PUBLIC_GOOGLE_CLIENT_ID is not configured.");
         return;
       }
 
       initializedRef.current = true;
 
-      console.log("Initializing Google GIS...");
-
       window.google.accounts.id.initialize({
         client_id: clientId,
+        ux_mode: "popup",
+        auto_select: false,
 
         callback: async (response) => {
           try {
             setLoading(true);
             setError(null);
 
-            const idToken = response.credential;
+            const idToken = response?.credential;
 
             if (!idToken) {
-              throw new Error("Google ID Token tidak ditemukan.");
+              throw new Error("Google ID token not found.");
             }
 
-            console.log("Google ID Token received");
-
-            // ==========================
-            // 1. VERIFY GOOGLE TOKEN
-            // ==========================
-
+            // Verify Google ID token through backend
             const verifyResponse = await api.verifyGoogleIdToken(idToken);
-
-            console.log("VERIFY RESPONSE:", verifyResponse);
 
             const sessionToken = verifyResponse?.data?.session_token;
 
             if (!sessionToken) {
-              throw new Error("Backend tidak mengembalikan session_token.");
+              throw new Error("Backend did not return a session_token.");
             }
 
-            // ==========================
-            // 2. CHECK SESSION
-            // ==========================
-
+            // Verify session
             const session = await api.getSession();
 
-            console.log("SESSION RESPONSE:", session);
-
             if (!session?.data) {
-              throw new Error("Session tidak valid.");
+              throw new Error("Session is not valid.");
             }
 
-            // ==========================
-            // 3. GET USER PROFILE
-            // ==========================
+            // Fetch current user profile
+            await api.getCurrentUserProfile();
 
-            const profile = await api.getCurrentUserProfile();
-
-            console.log("PROFILE RESPONSE:", profile);
-
-            console.log("LOGIN BERHASIL 🎉");
-
-            // ==========================
-            // 4. REDIRECT
-            // ==========================
-
+            // Redirect after successful authentication
             window.location.replace("/feed");
           } catch (err) {
-            console.error("GOOGLE LOGIN ERROR:", err);
-
             setError(
-              err instanceof Error ? err.message : "Google login gagal.",
+              err instanceof Error ? err.message : "Google login failed.",
             );
           } finally {
             setLoading(false);
           }
         },
       });
+
+      const container = buttonRef.current;
+      const width = Math.floor(container.clientWidth || 320);
+
+      window.google.accounts.id.renderButton(container, {
+        theme: "outline",
+        size: "large",
+        width,
+        text: "continue_with",
+        shape: "circle",
+      });
+
+      setGisReady(true);
     };
 
-    // Google GIS sudah tersedia
-    if (window.google) {
-      initializeGoogle();
-      return;
+    // GIS script already loaded
+    if (window.google?.accounts?.id) {
+      renderGisButton();
+
+      return () => {
+        cancelled = true;
+      };
     }
 
-    // Cek apakah script sudah ada
+    // Reuse existing GIS script if available
     const existingScript = document.querySelector<HTMLScriptElement>(
       'script[src="https://accounts.google.com/gsi/client"]',
     );
 
     if (existingScript) {
-      existingScript.addEventListener("load", initializeGoogle);
+      existingScript.addEventListener("load", renderGisButton);
 
       return () => {
-        existingScript.removeEventListener("load", initializeGoogle);
+        cancelled = true;
+        existingScript.removeEventListener("load", renderGisButton);
       };
     }
 
-    // Load Google GIS
+    // Load GIS script
     const script = document.createElement("script");
 
     script.src = "https://accounts.google.com/gsi/client";
-
     script.async = true;
     script.defer = true;
+    script.onload = renderGisButton;
 
-    script.onload = initializeGoogle;
+    script.onerror = () => {
+      if (!cancelled) {
+        setError("Failed to load Google sign-in. Try again.");
+      }
+    };
 
     document.head.appendChild(script);
 
     return () => {
+      cancelled = true;
       script.onload = null;
+
+      try {
+        window.google?.accounts?.id?.cancel();
+      } catch {
+        // Non-fatal
+      }
     };
   }, []);
 
-  const handleGoogleLogin = () => {
-    if (!window.google) {
-      setError("Google authentication belum siap. Silakan coba lagi.");
-      return;
-    }
-
-    setError(null);
-
-    window.google.accounts.id.prompt();
-  };
-
   return (
     <div className="w-full">
-      <Button
-        type="button"
-        variant="outline"
-        size="lg"
-        className="w-full"
-        onClick={handleGoogleLogin}
-        disabled={loading}
-      >
-        {loading ? (
-          "Authenticating..."
-        ) : (
-          <>
-            {/* Google Icon */}
-            <svg
-              className="mr-2 h-5 w-5"
-              viewBox="0 0 24 24"
-              aria-hidden="true"
-            >
-              <path
-                fill="#4285F4"
-                d="M21.35 12.27c0-.68-.06-1.33-.17-1.95H12v3.69h5.22a4.46 4.46 0 0 1-1.94 2.93v2.43h3.14c1.84-1.69 2.93-4.18 2.93-7.1Z"
-              />
-              <path
-                fill="#34A853"
-                d="M12 21.75c2.63 0 4.84-.87 6.45-2.38l-3.14-2.43c-.87.58-1.98.92-3.31.92-2.54 0-4.7-1.72-5.47-4.03H3.29v2.5A9.75 9.75 0 0 0 12 21.75Z"
-              />
-              <path
-                fill="#FBBC05"
-                d="M6.53 13.83A5.86 5.86 0 0 1 6.22 12c0-.64.11-1.26.31-1.83v-2.5H3.29A9.75 9.75 0 0 0 2.25 12c0 1.57.38 3.06 1.04 4.33l3.24-2.5Z"
-              />
-              <path
-                fill="#EA4335"
-                d="M12 6.14c1.43 0 2.72.49 3.73 1.46l2.8-2.8C16.84 3.15 14.63 2.25 12 2.25a9.75 9.75 0 0 0-8.71 5.42l3.24 2.5c.77-2.31 2.93-4.03 5.47-4.03Z"
-              />
-            </svg>
-            Continue with Google
-          </>
-        )}
-      </Button>
+      {/* Loading placeholder */}
+      {!gisReady && !error && (
+        <Button
+          type="button"
+          variant="outline"
+          size="lg"
+          className="w-full"
+          disabled
+        >
+          Loading Google sign-in...
+        </Button>
+      )}
 
-      {error && <p className="mt-3 text-sm text-red-500">{error}</p>}
+      {/* Google GIS button */}
+      <div
+        className="
+          flex
+          w-full
+          justify-center
+          overflow-hidden
+        "
+        aria-hidden={loading}
+      >
+        <div ref={buttonRef} className="w-full flex justify-center" />
+      </div>
+
+      {/* Authentication status */}
+      {loading && (
+        <p className="mt-3 text-center text-sm text-slate-500">
+          Authenticating...
+        </p>
+      )}
+
+      {/* Error message */}
+      {error && (
+        <p className="mt-3 text-center text-sm text-red-500">{error}</p>
+      )}
     </div>
   );
 }

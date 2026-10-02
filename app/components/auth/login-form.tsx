@@ -140,10 +140,10 @@ export default function LoginForm() {
 
         <Separator className="flex-1" />
       </div>
-
-      {/* GOOGLE */}
-      <GoogleLoginButtonN />
-
+      <div className="relative mx-auto items-center justify-center">
+        {/* GOOGLE */}
+        <GoogleLoginButtonN />
+      </div>
       {/* REGISTER */}
       <p className="mt-8 text-center text-sm text-slate-500">
         New to AnglerHub?{" "}

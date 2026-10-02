@@ -2,10 +2,7 @@ import { StaticImageData } from "next/image";
 import Fish1 from "@/assets/image/explore/fish-1.jpg";
 import Fish2 from "@/assets/image/explore/fish-2.jpg";
 
-//communites assets
-import CommImg1 from "@/assets/image/community/mania-mantap.jpg";
-import CommImg2 from "@/assets/image/community/mania-sedih.jpg";
-import CommImg3 from "@/assets/image/community/mantap-mania.jpg";
+
 
 export interface ExplorePost {
   id: number;
@@ -139,72 +136,4 @@ export const fishingSpots = [
   },
 ];
 
-export interface Communities {
-  id: number;
-  name: string;
-  members: number;
-  privacy: string;
-  category: string;
-  image: string | StaticImageData;
-  description: string;
-  active: boolean;
-  latestPost: {
-    user: string;
-    content: string;
-    time: string;
-    comments: number;
-  };
-}
 
-export const communities: Communities[] = [
-  {
-    id: 1,
-    name: "Fishing Indonesia",
-    members: 12800,
-    privacy: "Public",
-    category: "Fishing Community",
-    image: CommImg1,
-    description:
-      "Tempat berbagi pengalaman, tips, teknik dan hasil tangkapan pemancing Indonesia.",
-    active: true,
-    latestPost: {
-      user: "Rizky",
-      content: "Ada yang pernah mancing di sekitar Waduk Jatiluhur minggu ini?",
-      time: "15 min ago",
-      comments: 32,
-    },
-  },
-  {
-    id: 2,
-    name: "Casting Mania Indonesia",
-    members: 8420,
-    privacy: "Public",
-    category: "Casting",
-    image: CommImg2,
-    description: "Komunitas untuk penggemar casting freshwater.",
-    active: true,
-    latestPost: {
-      user: "Budi",
-      content: "Sharing setup casting budget 1 jutaan untuk pemula.",
-      time: "42 min ago",
-      comments: 18,
-    },
-  },
-  {
-    id: 3,
-    name: "Mancing Mania Jawa Tengah",
-    members: 5240,
-    privacy: "Public",
-    category: "Regional",
-    image: CommImg3,
-    description:
-      "Komunitas pemancing Jawa Tengah untuk berbagi spot dan pengalaman.",
-    active: true,
-    latestPost: {
-      user: "Dimas",
-      content: "Besok pagi ada yang mau mancing bareng?",
-      time: "1 hour ago",
-      comments: 27,
-    },
-  },
-];
