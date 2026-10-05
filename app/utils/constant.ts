@@ -7,6 +7,7 @@ import Post3 from "@/assets/image/feed/post3.jpg";
 
 /* Side Bar logo */
 import {
+  Bell,
   Compass,
   Fish,
   Home,
@@ -183,6 +184,11 @@ export const menuFeed: MenuFeed[] = [
     label: "Community",
     icon: Users,
     link: "/community",
+  },
+  {
+    label: "Notifications",
+    icon: Bell,
+    link: "/notifications",
   },
   {
     label: "My Profile",

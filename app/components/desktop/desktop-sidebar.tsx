@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Settings } from "lucide-react";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -10,12 +11,43 @@ import { menuFeed } from "@/app/utils/constant";
 import { LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { usePathname, useRouter } from "next/navigation";
+import {
+  NOTIFICATIONS_READ_EVENT,
+  getUnreadNotificationCount,
+} from "@/lib/api/notifications";
 // import { useAuth } from "@/hooks/use-auth";
 
 const Sidebar = () => {
   const pathname = usePathname();
   const router = useRouter();
   // const { logout, user } = useAuth();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function init() {
+      try {
+        const count = await getUnreadNotificationCount();
+        if (!cancelled) setUnreadCount(count);
+      } catch {
+        // Silently ignore (e.g. logged out) — no badge shown.
+      }
+    }
+    init();
+    async function onNotificationsRead() {
+      try {
+        const count = await getUnreadNotificationCount();
+        if (!cancelled) setUnreadCount(count);
+      } catch {
+        // Silently ignore — badge keeps its last value.
+      }
+    }
+    window.addEventListener(NOTIFICATIONS_READ_EVENT, onNotificationsRead);
+    return () => {
+      cancelled = true;
+      window.removeEventListener(NOTIFICATIONS_READ_EVENT, onNotificationsRead);
+    };
+  }, [pathname]);
 
   return (
     <div className="sticky top-0 flex h-screen flex-col px-5 py-7 bg-white dark:bg-slate-950 text-slate-900 dark:text-white">
@@ -47,6 +79,7 @@ const Sidebar = () => {
         {menuFeed.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.link;
+          const showBadge = item.link === "/notifications" && unreadCount > 0;
 
           return (
             <Button
@@ -56,19 +89,28 @@ const Sidebar = () => {
                 group relative w-full justify-start items-center gap-3
                 rounded-2xl px-2 py-2 h-auto cursor-pointer
                 text-base font-medium transition-all duration-200
-                ${isActive
-                  ? "bg-primary-hover/50 text-tactive"
-                  : "bg-transparent text-tinactive hover:bg-primary-hover/20 hover:text-thover"
+                ${
+                  isActive
+                    ? "bg-primary-hover/50 text-tactive"
+                    : "bg-transparent text-tinactive hover:bg-primary-hover/20 hover:text-thover"
                 }
               `}
             >
-              <Icon
-                size={19}
-                className={`transition-transform duration-200 ${isActive
-                  ? "text-tactive"
-                  : "text-tinactive group-hover:scale-110 group-hover:text-tactive"
+              <span className="relative">
+                <Icon
+                  size={19}
+                  className={`transition-transform duration-200 ${
+                    isActive
+                      ? "text-tactive"
+                      : "text-tinactive group-hover:scale-110 group-hover:text-tactive"
                   }`}
-              />
+                />
+                {/* {showBadge && (
+                  <span className="absolute -top-2 -right-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold leading-none text-white">
+                    {unreadCount > 99 ? "99+" : unreadCount}
+                  </span>
+                )} */}
+              </span>
 
               <span
                 className={
@@ -79,6 +121,12 @@ const Sidebar = () => {
               >
                 {item.label}
               </span>
+
+              {showBadge && (
+                <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white">
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </span>
+              )}
             </Button>
           );
         })}
@@ -123,18 +171,20 @@ const Sidebar = () => {
             group relative w-full justify-start items-center gap-3
             rounded-2xl px-5 py-5 h-auto cursor-pointer
             text-base font-medium transition-all duration-200
-            ${pathname === "/settings"
-              ? "bg-primary-hover/50 text-tactive"
-              : "bg-transparent text-tinactive hover:bg-primary-hover/20 hover:text-thover"
+            ${
+              pathname === "/settings"
+                ? "bg-primary-hover/50 text-tactive"
+                : "bg-transparent text-tinactive hover:bg-primary-hover/20 hover:text-thover"
             }
           `}
         >
           <Settings
             size={19}
-            className={`transition-transform duration-200 ${pathname === "/settings"
-              ? "text-tactive"
-              : "text-tinactive group-hover:scale-110 group-hover:text-tactive"
-              }`}
+            className={`transition-transform duration-200 ${
+              pathname === "/settings"
+                ? "text-tactive"
+                : "text-tinactive group-hover:scale-110 group-hover:text-tactive"
+            }`}
           />
           <span
             className={
