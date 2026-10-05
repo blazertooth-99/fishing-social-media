@@ -43,6 +43,10 @@ import {
 } from "@/lib/api/posts";
 import DesktopFishingPost from "@/app/components/desktop/desktop-fishing-post";
 import MobileFishingPost from "@/app/components/mobile/mobile-fishing-post";
+import CreatePost from "@/app/components/shared/post/create-post";
+import FollowListDialog, {
+  type FollowListTab,
+} from "@/app/components/shared/profile/follow-list-dialog";
 // import { useTheme } from "@/app/components/providers/theme-provider";
 import { api } from "@/lib/api";
 
@@ -117,6 +121,25 @@ export function ThreadsProfileView({
       prev.map((p) => (p.id === updated.id ? updated : p)),
     );
     showToast("Post updated!");
+  }
+
+  // Fresh post from the profile composer goes on top (same flow as /feed).
+  function handlePostCreated(post: ApiPost) {
+    setUserPosts((prev) =>
+      prev.some((p) => p.id === post.id) ? prev : [post, ...prev],
+    );
+    setActiveTab("post");
+    showToast("Post published!");
+  }
+
+  // Followers / following dialog (Threads-style list).
+  const [followDialogOpen, setFollowDialogOpen] = useState(false);
+  const [followInitialTab, setFollowInitialTab] =
+    useState<FollowListTab>("followers");
+
+  function openFollowList(tab: FollowListTab) {
+    setFollowInitialTab(tab);
+    setFollowDialogOpen(true);
   }
 
   // Toast / feedback message
@@ -339,7 +362,7 @@ export function ThreadsProfileView({
               </p>
             )}
 
-            {/* STACKED FOLLOWER AVATARS (Matching Wireframe) */}
+            {/* STACKED FOLLOWER AVATARS + FOLLOW COUNTS (tap to view lists) */}
             <div className="mt-4 flex items-center gap-2">
               <div className="flex -space-x-2 overflow-hidden">
                 <span className="inline-block size-5 sm:size-6 rounded-full ring-2 ring-white dark:ring-slate-950 bg-red-500 text-[10px] text-white flex items-center justify-center font-bold">
@@ -353,9 +376,25 @@ export function ThreadsProfileView({
                 </span>
               </div>
 
-              <span className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-normal">
-                {profile.followers_count ?? 33} Followers
+              <button
+                type="button"
+                onClick={() => openFollowList("followers")}
+                className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-normal transition-colors hover:text-slate-900 dark:hover:text-white"
+              >
+                {profile.followers_count ?? 0} Followers
+              </button>
+
+              <span className="text-xs text-slate-300 dark:text-slate-600">
+                ·
               </span>
+
+              <button
+                type="button"
+                onClick={() => openFollowList("following")}
+                className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-normal transition-colors hover:text-slate-900 dark:hover:text-white"
+              >
+                {profile.following_count ?? 0} Following
+              </button>
             </div>
           </div>
 
@@ -422,37 +461,11 @@ export function ThreadsProfileView({
       </section>
 
       {/* ========================================================
-          5. SHARE CTA (posts require photo + GPS, so creation lives on /feed)
+          5. COMPOSER (same CreatePost flow as /feed — caption +
+             photos + GPS; fresh post is prepended above)
       ======================================================== */}
       <section className="py-4 border-b border-slate-200/80 dark:border-slate-800">
-        <div className="flex items-center gap-3">
-          {/* USER MINI AVATAR */}
-          <Avatar className="size-10 shrink-0 ring-1 ring-amber-400 bg-amber-100">
-            <AvatarImage
-              src={getAvatarUrl(profile.avatar_media_id) ?? undefined}
-              alt={profile.display_name}
-            />
-            <AvatarFallback className="bg-amber-400 text-slate-900 text-xs font-bold">
-              {initials}
-            </AvatarFallback>
-          </Avatar>
-
-          <button
-            type="button"
-            onClick={() => router.push("/feed")}
-            className="h-11 flex-1 rounded-full border border-slate-200/90 dark:border-slate-700 bg-slate-50/70 dark:bg-slate-900 px-4 text-left text-xs sm:text-sm text-slate-400 transition hover:bg-slate-100 dark:hover:bg-slate-800"
-          >
-            Share your catch… 🎣
-          </button>
-
-          <Button
-            type="button"
-            onClick={() => router.push("/feed")}
-            className="h-11 px-5 rounded-xl bg-slate-500 hover:bg-slate-600 dark:bg-slate-700 dark:hover:bg-slate-600 text-white font-medium text-xs sm:text-sm transition-all"
-          >
-            Post
-          </Button>
-        </div>
+        <CreatePost onPostCreated={handlePostCreated} />
       </section>
 
       {/* ========================================================
@@ -676,6 +689,18 @@ export function ThreadsProfileView({
           </form>
         </DialogContent>
       </Dialog>
+      {/* ========================================================
+          8. FOLLOWERS / FOLLOWING DIALOG (Threads-style list)
+      ======================================================== */}
+      <FollowListDialog
+        key={followInitialTab}
+        open={followDialogOpen}
+        onOpenChange={setFollowDialogOpen}
+        username={profile.username}
+        initialTab={followInitialTab}
+        followersCount={profile.followers_count ?? 0}
+        followingCount={profile.following_count ?? 0}
+      />
     </div>
   );
 }
