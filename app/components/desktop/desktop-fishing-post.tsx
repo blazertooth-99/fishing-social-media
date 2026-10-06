@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 import EditPostDialog from "@/app/components/shared/post/edit-post-dialog";
+import CommunityTag from "@/app/components/shared/post/community-tag";
 
 import {
   formatRelativeTime,
@@ -87,6 +88,12 @@ export default function DesktopFishingPost({
             </div>
 
             <p className="text-xs text-slate-400">@{post.author_username}</p>
+
+            {post.community_id && (
+              <div className="mt-1">
+                <CommunityTag communityId={post.community_id} />
+              </div>
+            )}
           </div>
         </div>
 

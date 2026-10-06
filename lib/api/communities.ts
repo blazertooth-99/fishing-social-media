@@ -135,6 +135,199 @@ export async function listCommunities(opts?: {
 }
 
 /**
+ * List communities the viewer has joined.
+ *
+ * There is no dedicated "my communities" endpoint in FRONTEND_API_GUIDE §15,
+ * and the live `GET /api/v1/communities` list does NOT reliably return
+ * `is_member`/`my_role` even when authenticated (verified 2026-10-07: a
+ * logged-in owner still gets no flags on the list, while
+ * `GET /communities/{slug}` detail does). So membership is resolved from
+ * three sources:
+ *   1. server flags (`is_member` / `my_role`) when present,
+ *   2. `creator_id === currentUserId` (creators are always owners),
+ *   3. local join cache (localStorage, written on every join/create success).
+ * Locally-known communities missing from the fetched pages are backfilled via
+ * `GET /communities/{slug}` detail (bounded, best-effort).
+ */
+export async function listJoinedCommunities(opts?: {
+  limit?: number;
+  maxPages?: number;
+  currentUserId?: string | null;
+}): Promise<ApiCommunity[]> {
+  const limit = opts?.limit ?? 20;
+  const maxPages = opts?.maxPages ?? 5;
+  const currentUserId = opts?.currentUserId ?? null;
+  const joined: ApiCommunity[] = [];
+  let cursor: string | null | undefined;
+  const seen = new Set<string>();
+
+  for (let page = 0; page < maxPages; page++) {
+    const { items, nextCursor, hasMore } = await listCommunities({ limit, cursor });
+    for (const item of items) {
+      if (seen.has(item.id)) continue;
+      seen.add(item.id);
+      if (isCommunityMember(item, currentUserId)) joined.push(item);
+    }
+    if (!hasMore || !nextCursor) break;
+    cursor = nextCursor;
+  }
+
+  // Backfill locally-known joins that fell outside the fetched pages.
+  const missing = getLocalJoinedCommunities().filter(
+    (entry) =>
+      !joined.some((c) => c.id === entry.id || c.slug === entry.slug),
+  );
+  for (const entry of missing.slice(0, 10)) {
+    try {
+      const detail = await getCommunityByIdOrSlug(entry.slug || entry.id);
+      if (seen.has(detail.id)) continue;
+      seen.add(detail.id);
+      joined.push(withMembershipFlag(detail, "MEMBER"));
+    } catch {
+      // Detail gone (deleted/private) — drop the stale cache entry.
+      markCommunityLeft(entry.slug || entry.id);
+    }
+  }
+
+  return joined;
+}
+
+/**
+ * Browser event fired whenever membership changes (join / leave / create).
+ * `useJoinedCommunities` (Your communities sidebar) listens to this so the
+ * sidebar refreshes immediately without a page reload.
+ */
+export const COMMUNITY_MEMBERSHIP_EVENT = "community:membership-changed";
+
+export function notifyCommunityMembershipChanged(): void {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent(COMMUNITY_MEMBERSHIP_EVENT));
+  }
+}
+
+/**
+ * True when the viewer is a member (or owner/admin/moderator) of the community.
+ * Sources, in order:
+ *   1. server flags (`is_member` / `my_role`) when the backend sends them,
+ *   2. `creator_id === currentUserId` (creators are always owners),
+ *   3. local join cache (written on every join/create success, so the Joined
+ *      state survives page navigation even when the list omits the flags).
+ */
+export function isCommunityMember(
+  community: ApiCommunity,
+  currentUserId?: string | null,
+): boolean {
+  if (community.is_member === true) return true;
+  if (typeof community.my_role === "string" && community.my_role.trim() !== "") {
+    return true;
+  }
+  if (
+    currentUserId &&
+    typeof community.creator_id === "string" &&
+    community.creator_id === currentUserId
+  ) {
+    return true;
+  }
+  if (isLocalCommunityMember(community)) return true;
+  return false;
+}
+
+/**
+ * Client-side join cache. The live `GET /communities` list omits
+ * `is_member`/`my_role` even for authenticated members, so without this the
+ * Join button would flip back to "Join" on every reload. Written on every
+ * join/create success, cleared on leave.
+ */
+const LOCAL_JOINED_KEY = "fc_joined_communities_v1";
+
+export interface LocalJoinedEntry {
+  id: string;
+  slug: string;
+}
+
+export function getLocalJoinedCommunities(): LocalJoinedEntry[] {
+  if (typeof window === "undefined" || typeof localStorage === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(LOCAL_JOINED_KEY);
+    if (!raw) return [];
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .filter(
+        (e): e is LocalJoinedEntry =>
+          !!e && typeof (e as LocalJoinedEntry).id === "string",
+      )
+      .map((e) => ({ id: e.id, slug: typeof e.slug === "string" ? e.slug : "" }));
+  } catch {
+    return [];
+  }
+}
+
+function setLocalJoinedCommunities(entries: LocalJoinedEntry[]): void {
+  if (typeof window === "undefined" || typeof localStorage === "undefined") return;
+  try {
+    localStorage.setItem(LOCAL_JOINED_KEY, JSON.stringify(entries.slice(0, 200)));
+  } catch {
+    // Storage full/blocked — membership still works for this session via flags.
+  }
+}
+
+export function markCommunityJoined(community: { id: string; slug?: string | null }): void {
+  const entries = getLocalJoinedCommunities().filter((e) => e.id !== community.id);
+  entries.unshift({ id: community.id, slug: community.slug ?? "" });
+  setLocalJoinedCommunities(entries);
+}
+
+export function markCommunityLeft(idOrSlug: string): void {
+  setLocalJoinedCommunities(
+    getLocalJoinedCommunities().filter((e) => e.id !== idOrSlug && e.slug !== idOrSlug),
+  );
+}
+
+export function isLocalCommunityMember(community: { id?: string; slug?: string | null }): boolean {
+  const entries = getLocalJoinedCommunities();
+  return entries.some(
+    (e) =>
+      (!!community.id && e.id === community.id) ||
+      (!!community.slug && !!e.slug && e.slug === community.slug),
+  );
+}
+
+/** Button label for the membership state: Owner / Joined / Join. */
+export function membershipButtonLabel(
+  community: ApiCommunity,
+  currentUserId?: string | null,
+): string {
+  const role = typeof community.my_role === "string" ? community.my_role.toUpperCase() : "";
+  if (role === "OWNER") return "Owner";
+  if (role === "ADMIN") return "Admin";
+  if (
+    currentUserId &&
+    typeof community.creator_id === "string" &&
+    community.creator_id === currentUserId
+  ) {
+    return "Owner";
+  }
+  if (isCommunityMember(community, currentUserId)) return "Joined";
+  return "Join";
+}
+
+/**
+ * Force membership flags on a community object (used optimistically after
+ * join/create when the backend omits `is_member`/`my_role`).
+ */
+export function withMembershipFlag(
+  community: ApiCommunity,
+  role: string = "MEMBER",
+): ApiCommunity {
+  return {
+    ...community,
+    is_member: true,
+    my_role: community.my_role ?? role,
+  };
+}
+
+/**
  * GET /api/v1/communities/{id_or_slug} — single community detail.
  * Used after create to display the fresh community on /community.
  */

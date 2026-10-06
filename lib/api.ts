@@ -1,4 +1,9 @@
 import type { ApiResponse, SessionData, User } from "@/types/auth";
+import { getSessionToken as readSessionToken } from "@/lib/api/client";
+import {
+  getCachedSession,
+  invalidateSessionCache,
+} from "@/lib/api/session";
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ||
@@ -28,11 +33,11 @@ class ApiService {
   }
 
   getSessionToken(): string | null {
-    if (typeof window === "undefined") {
-      return null;
-    }
-
-    return localStorage.getItem(SESSION_TOKEN_KEY);
+    // Single source of truth (localStorage + readable cookie fallback).
+    // Web OAuth sessions live in the HttpOnly cookie and are sent via
+    // `credentials: "include"` — never gate navigation on this alone,
+    // always verify with getSession() (GET /auth/session) instead.
+    return readSessionToken();
   }
 
   private getHeaders(customHeaders: HeadersInit = {}): HeadersInit {
@@ -111,14 +116,17 @@ class ApiService {
       this.setSessionToken(response.data.session_token);
     }
 
+    // New identity — drop any cached (possibly logged-out) session.
+    invalidateSessionCache();
+
     return response;
   }
 
   async getSession() {
+    // Shared cached session (deduped + 429-aware). Concurrent callers across
+    // components share one request instead of bursting /auth/session.
     try {
-      return await this.request<ApiResponse<SessionData>>("/auth/session", {
-        method: "GET",
-      });
+      return (await getCachedSession()) as ApiResponse<SessionData> | null;
     } catch (error) {
       if (error instanceof ApiError && error.status === 401) {
         return null;
@@ -141,6 +149,7 @@ class ApiService {
       });
     } finally {
       this.setSessionToken(null);
+      invalidateSessionCache();
     }
   }
 

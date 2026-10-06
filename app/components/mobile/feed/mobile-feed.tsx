@@ -10,10 +10,19 @@ import CreatePost from "@/app/components/shared/post/create-post";
 import { extractApiErrorMessage, getFeed, type ApiPost } from "@/lib/api/posts";
 import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
+import { useJoinedCommunities } from "@/app/components/shared/community/use-joined-communities";
+import { useRouter } from "next/navigation";
 
 const PAGE_LIMIT = 20;
 
 export default function MobileLayout() {
+  const router = useRouter();
+  const {
+    communities: joinedCommunities,
+    isLoading: joinedLoading,
+    error: joinedError,
+    isLoggedOut: joinedLoggedOut,
+  } = useJoinedCommunities({ limit: 20, maxPages: 5 });
   const [posts, setPosts] = useState<ApiPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -78,6 +87,74 @@ export default function MobileLayout() {
         {/* POST /api/v1/posts (mobile) */}
         <div className="mb-3">
           <CreatePost onPostCreated={handlePostCreated} />
+        </div>
+
+        {/* YOUR COMMUNITIES — joined by user */}
+        <div className="mb-3 rounded-2xl bg-white p-3 shadow-sm">
+          <div className="mb-2 flex items-center justify-between px-1">
+            <h2 className="text-sm font-bold text-slate-900">Your communities</h2>
+            <button
+              onClick={() => router.push("/community")}
+              className="text-[11px] font-semibold text-emerald-600"
+            >
+              See all
+            </button>
+          </div>
+
+          {joinedLoading && joinedCommunities.length === 0 ? (
+            <div className="flex gap-2 overflow-hidden">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="h-16 w-32 shrink-0 animate-pulse rounded-xl bg-slate-100"
+                />
+              ))}
+            </div>
+          ) : joinedCommunities.length > 0 ? (
+            <div className="flex gap-2 overflow-x-auto scrollbar-none">
+              {joinedCommunities.slice(0, 10).map((community) => (
+                <button
+                  key={community.id}
+                  onClick={() =>
+                    router.push(
+                      `/community/${encodeURIComponent(community.slug || community.id)}`,
+                    )
+                  }
+                  className="flex w-36 shrink-0 items-center gap-2 rounded-xl bg-slate-50 p-2 text-left"
+                >
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-xs font-bold text-emerald-700">
+                    {community.name.slice(0, 2).toUpperCase()}
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block truncate text-xs font-semibold text-slate-800">
+                      {community.name}
+                    </span>
+                    <span className="block truncate text-[10px] text-slate-400">
+                      {(community.member_count ?? 0).toLocaleString()} members
+                    </span>
+                  </span>
+                </button>
+              ))}
+            </div>
+          ) : joinedLoggedOut ? (
+            <p className="px-1 text-xs text-slate-400">
+              Log in to see communities you joined.
+            </p>
+          ) : joinedError ? (
+            <p className="px-1 text-xs text-red-500">{joinedError}</p>
+          ) : (
+            <div className="px-1">
+              <p className="text-xs text-slate-400">
+                You haven&apos;t joined any community yet.
+              </p>
+              <button
+                onClick={() => router.push("/community")}
+                className="mt-1 text-xs font-semibold text-emerald-600"
+              >
+                Browse communities
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="space-y-2">

@@ -40,6 +40,43 @@ export function getAuthHeaders(customHeaders: HeadersInit = {}): HeadersInit {
   };
 }
 
+export interface ApiFetchError {
+  status?: number;
+  data?: unknown;
+  /** Milliseconds to wait before retrying (parsed from `Retry-After` on 429). */
+  retryAfterMs?: number;
+}
+
+/**
+ * Parse a `Retry-After` header value (seconds or HTTP date) to milliseconds.
+ * Returns null when absent/unparseable.
+ */
+export function parseRetryAfterMs(value: string | null): number | null {
+  if (!value) return null;
+  const trimmed = value.trim();
+  const seconds = Number(trimmed);
+  if (Number.isFinite(seconds) && seconds >= 0) {
+    return Math.min(seconds * 1000, 60_000);
+  }
+  const dateMs = Date.parse(trimmed);
+  if (!Number.isNaN(dateMs)) {
+    return Math.max(0, Math.min(dateMs - Date.now(), 60_000));
+  }
+  return null;
+}
+
+export function isRateLimitedError(err: unknown): boolean {
+  return (err as { status?: number })?.status === 429;
+}
+
+export function getRetryAfterMs(err: unknown, fallbackMs: number): number {
+  const hint = (err as { retryAfterMs?: unknown })?.retryAfterMs;
+  if (typeof hint === "number" && Number.isFinite(hint) && hint >= 0) {
+    return Math.min(hint, 60_000);
+  }
+  return fallbackMs;
+}
+
 export async function apiFetch<T>(
   endpoint: string,
   options: RequestInit = {},
@@ -78,10 +115,16 @@ export async function apiFetch<T>(
   }
 
   if (!response.ok) {
-    throw {
+    const thrown: ApiFetchError = {
       status: response.status,
       data,
     };
+    // Surface rate-limit backoff hints so callers can retry instead of hammering.
+    if (response.status === 429) {
+      const retryAfterMs = parseRetryAfterMs(response.headers.get("retry-after"));
+      if (retryAfterMs !== null) thrown.retryAfterMs = retryAfterMs;
+    }
+    throw thrown;
   }
 
   return data as T;

@@ -15,6 +15,7 @@ import {
   NOTIFICATIONS_READ_EVENT,
   getUnreadNotificationCount,
 } from "@/lib/api/notifications";
+import { useJoinedCommunities } from "@/app/components/shared/community/use-joined-communities";
 // import { useAuth } from "@/hooks/use-auth";
 
 const Sidebar = () => {
@@ -22,6 +23,13 @@ const Sidebar = () => {
   const router = useRouter();
   // const { logout, user } = useAuth();
   const [unreadCount, setUnreadCount] = useState(0);
+  const {
+    communities: joinedCommunities,
+    isLoading: joinedLoading,
+    error: joinedError,
+    isLoggedOut: joinedLoggedOut,
+    reload: reloadJoined,
+  } = useJoinedCommunities({ limit: 20, maxPages: 5 });
 
   useEffect(() => {
     let cancelled = false;
@@ -134,33 +142,100 @@ const Sidebar = () => {
 
       <Separator className="my-7" />
 
-      {/* QUICK COMMUNITY */}
+      {/* YOUR COMMUNITIES — joined by user (GET /communities filtered is_member) */}
       <div>
-        <p className="mb-4 px-3 text-xs font-semibold uppercase tracking-wider text-slate-400">
-          Your communities
-        </p>
+        <div className="mb-4 flex items-center justify-between px-3">
+          <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+            Your communities
+          </p>
 
-        <div className="space-y-3">
-          <button className="flex w-full items-center gap-3 rounded-xl p-2 text-left hover:bg-slate-50">
-            <div className="h-9 w-9 rounded-full bg-gradient-to-br from-blue-400 to-cyan-500" />
-
-            <div>
-              <p className="text-sm font-medium text-slate-800">Freshwater</p>
-
-              <p className="text-xs text-slate-400">12.4k anglers</p>
-            </div>
-          </button>
-
-          <button className="flex w-full items-center gap-3 rounded-xl p-2 text-left hover:bg-slate-50">
-            <div className="h-9 w-9 rounded-full bg-gradient-to-br from-orange-400 to-red-500" />
-
-            <div>
-              <p className="text-sm font-medium text-slate-800">Saltwater</p>
-
-              <p className="text-xs text-slate-400">8.7k anglers</p>
-            </div>
+          <button
+            onClick={() => router.push("/community")}
+            className="text-[11px] font-semibold text-emerald-600 hover:text-emerald-700"
+          >
+            See all
           </button>
         </div>
+
+        {joinedLoading && joinedCommunities.length === 0 ? (
+          <div className="space-y-3">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div
+                key={i}
+                className="flex animate-pulse items-center gap-3 rounded-xl p-2"
+              >
+                <div className="h-9 w-9 rounded-full bg-slate-100" />
+                <div className="flex-1 space-y-1.5">
+                  <div className="h-3 w-2/3 rounded bg-slate-100" />
+                  <div className="h-2.5 w-1/3 rounded bg-slate-100" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : joinedCommunities.length > 0 ? (
+          <div className="space-y-1">
+            {joinedCommunities.slice(0, 5).map((community) => (
+              <button
+                key={community.id}
+                onClick={() =>
+                  router.push(
+                    `/community/${encodeURIComponent(community.slug || community.id)}`,
+                  )
+                }
+                className="flex w-full items-center gap-3 rounded-xl p-2 text-left hover:bg-slate-50"
+              >
+                <Avatar className="h-9 w-9">
+                  <AvatarFallback className="bg-emerald-100 text-xs font-bold text-emerald-700">
+                    {community.name.slice(0, 2).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-slate-800">
+                    {community.name}
+                  </p>
+
+                  <p className="truncate text-xs text-slate-400">
+                    {(community.member_count ?? 0).toLocaleString()} members
+                    {community.my_role ? ` • ${community.my_role}` : ""}
+                  </p>
+                </div>
+              </button>
+            ))}
+            {joinedError && (
+              <button
+                onClick={() => void reloadJoined()}
+                className="w-full rounded-xl p-2 text-left text-[11px] font-medium text-slate-400 hover:text-slate-600"
+              >
+                Couldn&apos;t refresh — tap to retry
+              </button>
+            )}
+          </div>
+        ) : joinedLoggedOut ? (
+          <div className="rounded-2xl bg-slate-50 p-3 text-xs leading-5 text-slate-500">
+            Log in to see communities you joined.
+          </div>
+        ) : joinedError ? (
+          <div className="rounded-2xl bg-red-50 p-3 text-xs leading-5 text-red-600">
+            {joinedError}
+            <button
+              onClick={() => void reloadJoined()}
+              className="mt-1 block font-semibold underline"
+            >
+              Try again
+            </button>
+          </div>
+        ) : (
+          <div className="rounded-2xl bg-slate-50 p-3 text-xs leading-5 text-slate-500">
+            You haven&apos;t joined any community yet.
+            <button
+              onClick={() => router.push("/community")}
+              className="mt-1 block font-semibold text-emerald-600"
+            >
+              Browse communities
+            </button>
+          </div>
+        )}
       </div>
 
       {/* BOTTOM */}

@@ -1,4 +1,5 @@
 import { apiFetch, API_BASE_URL, getAuthHeaders } from "./client";
+import { invalidateSessionCache } from "./session";
 
 /**
  * ==============================
@@ -128,5 +129,6 @@ export async function logout() {
     if (typeof window !== "undefined") {
       localStorage.removeItem("fishing_session_token");
     }
+    invalidateSessionCache();
   }
 }

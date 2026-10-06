@@ -21,6 +21,7 @@ import {
 import Image from "next/image";
 
 import EditPostDialog from "@/app/components/shared/post/edit-post-dialog";
+import CommunityTag from "@/app/components/shared/post/community-tag";
 
 import {
   formatRelativeTime,
@@ -64,14 +65,22 @@ export default function MobileFishingPost({
             </AvatarFallback>
           </Avatar>
 
-          <div className="flex items-center gap-1.5">
-            <p className="text-sm font-bold text-slate-900">
-              {post.author_display_name}
-            </p>
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5">
+              <p className="truncate text-sm font-bold text-slate-900">
+                {post.author_display_name}
+              </p>
 
-            <span className="text-[10px] text-slate-400">
-              • {formatRelativeTime(post.created_at)}
-            </span>
+              <span className="shrink-0 text-[10px] text-slate-400">
+                • {formatRelativeTime(post.created_at)}
+              </span>
+            </div>
+
+            {post.community_id && (
+              <div className="mt-1">
+                <CommunityTag communityId={post.community_id} />
+              </div>
+            )}
           </div>
         </div>
 

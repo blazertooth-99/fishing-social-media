@@ -15,7 +15,7 @@ import {
 } from "@/lib/api/profile";
 
 import { resolveMediaId, uploadMedia } from "@/lib/api/media";
-import { getSessionToken } from "@/lib/api/client";
+import { api } from "@/lib/api";
 import DesktopSidebar from "../../desktop/desktop-sidebar";
 
 export interface ProfileUpdateData {
@@ -40,9 +40,11 @@ export default function ProfileController() {
       setLoading(true);
       setError(null);
 
-      const token = getSessionToken();
-      if (!token) {
-        console.warn("No session token found, redirecting to /login");
+      // Verify with the server — web OAuth sessions live in the HttpOnly
+      // cookie, so a missing localStorage token does NOT mean logged out.
+      const session = await api.getSession().catch(() => null);
+      if (!session?.data) {
+        console.warn("No valid session, redirecting to /login");
         router.replace("/login");
         return;
       }

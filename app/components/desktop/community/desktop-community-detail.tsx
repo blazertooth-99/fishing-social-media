@@ -14,9 +14,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useCommunityDetail } from "@/app/components/shared/community/use-community-detail";
+import { isCommunityMember } from "@/lib/api/communities";
 import {
   CommunityPostCard,
   MemberRow,
+  RoleBadge,
 } from "@/app/components/shared/community/community-detail-widgets";
 
 import DesktopSidebar from "../desktop-sidebar";
@@ -44,7 +46,11 @@ export default function DesktopCommunityDetail({ slug }: { slug: string }) {
     reload,
   } = useCommunityDetail(slug);
 
-  const isMember = community?.is_member === true;
+  const isMember = community ? isCommunityMember(community) : false;
+  // Backend rejects owner leave ("cannot leave without transferring ownership"),
+  // so owners get a badge instead of a Leave button that can only error.
+  const myRole = (community?.my_role ?? "").toUpperCase();
+  const isOwner = myRole === "OWNER";
 
   return (
     <main className="min-h-screen bg-slate-50">
@@ -119,7 +125,9 @@ export default function DesktopCommunityDetail({ slug }: { slug: string }) {
                       <div className="flex h-16 w-16 items-center justify-center rounded-2xl border-4 border-white bg-gradient-to-br from-cyan-400 to-blue-500 text-2xl text-white shadow-lg">
                         🎣
                       </div>
-                      {isMember ? (
+                      {isOwner ? (
+                        <RoleBadge role="OWNER" />
+                      ) : isMember ? (
                         <Button
                           type="button"
                           variant="outline"

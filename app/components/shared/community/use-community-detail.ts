@@ -11,6 +11,10 @@ import {
   leaveCommunity,
   listCommunityMembers,
   listCommunityPosts,
+  markCommunityJoined,
+  markCommunityLeft,
+  notifyCommunityMembershipChanged,
+  withMembershipFlag,
   type ApiCommunity,
   type ApiCommunityMember,
   type ApiCommunityPost,
@@ -111,17 +115,33 @@ export function useCommunityDetail(slug: string) {
     setMembershipError(null);
     try {
       await joinCommunity(community.slug || community.id);
+      markCommunityJoined(community);
       setCommunity((prev) =>
         prev
-          ? { ...prev, is_member: true, member_count: (prev.member_count ?? 0) + 1 }
+          ? withMembershipFlag(
+              { ...prev, member_count: (prev.member_count ?? 0) + 1 },
+              "MEMBER",
+            )
           : prev,
       );
+      notifyCommunityMembershipChanged();
       const fresh = await listCommunityMembers(community.slug || community.id).catch(
         () => null,
       );
       if (fresh) setMembers(fresh);
     } catch (err) {
-      setMembershipError(extractCommunityErrorMessage(err, "Failed to join community"));
+      const status = (err as { status?: number })?.status;
+      const body = (err as { data?: unknown })?.data as
+        | { error?: { code?: string } }
+        | undefined;
+      // Already a member — still Joined, still sync the sidebar.
+      if (status === 409 || body?.error?.code === "RESOURCE_CONFLICT") {
+        markCommunityJoined(community);
+        setCommunity((prev) => (prev ? withMembershipFlag(prev, "MEMBER") : prev));
+        notifyCommunityMembershipChanged();
+      } else {
+        setMembershipError(extractCommunityErrorMessage(err, "Failed to join community"));
+      }
     } finally {
       setMembershipLoading(false);
     }
@@ -133,15 +153,18 @@ export function useCommunityDetail(slug: string) {
     setMembershipError(null);
     try {
       await leaveCommunity(community.slug || community.id);
+      markCommunityLeft(community.slug || community.id);
       setCommunity((prev) =>
         prev
           ? {
               ...prev,
               is_member: false,
+              my_role: null,
               member_count: Math.max(0, (prev.member_count ?? 1) - 1),
             }
           : prev,
       );
+      notifyCommunityMembershipChanged();
       const fresh = await listCommunityMembers(community.slug || community.id).catch(
         () => null,
       );

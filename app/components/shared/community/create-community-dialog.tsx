@@ -21,7 +21,10 @@ import {
   extractCommunityErrorMessages,
   getCommunityByIdOrSlug,
   isValidCommunitySlug,
+  markCommunityJoined,
+  notifyCommunityMembershipChanged,
   slugifyCommunityName,
+  withMembershipFlag,
   type ApiCommunity,
   type CommunityVisibility,
 } from "@/lib/api/communities";
@@ -118,9 +121,15 @@ export default function CreateCommunityDialog({
         // Fall back to the create response when detail fetch fails.
       }
 
+      // The creator is OWNER — flag it even when the backend omits the flags
+      // so the card shows Owner + lands in Your communities immediately.
+      fresh = withMembershipFlag(fresh, "OWNER");
+      markCommunityJoined(fresh);
+
       resetForm();
       onOpenChange(false);
       onCommunityCreated?.(fresh);
+      notifyCommunityMembershipChanged();
     } finally {
       setSubmitting(false);
     }

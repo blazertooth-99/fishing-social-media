@@ -14,9 +14,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useCommunityDetail } from "@/app/components/shared/community/use-community-detail";
+import { isCommunityMember } from "@/lib/api/communities";
 import {
   CommunityPostCard,
   MemberRow,
+  RoleBadge,
 } from "@/app/components/shared/community/community-detail-widgets";
 
 export default function MobileCommunityDetail({ slug }: { slug: string }) {
@@ -42,7 +44,9 @@ export default function MobileCommunityDetail({ slug }: { slug: string }) {
     reload,
   } = useCommunityDetail(slug);
 
-  const isMember = community?.is_member === true;
+  const isMember = community ? isCommunityMember(community) : false;
+  const myRole = (community?.my_role ?? "").toUpperCase();
+  const isOwner = myRole === "OWNER";
 
   return (
     <main className="min-h-screen bg-slate-50 pb-24">
@@ -123,7 +127,9 @@ export default function MobileCommunityDetail({ slug }: { slug: string }) {
                   <div className="flex h-14 w-14 items-center justify-center rounded-xl border-4 border-white bg-gradient-to-br from-cyan-400 to-blue-500 text-xl text-white shadow">
                     🎣
                   </div>
-                  {isMember ? (
+                  {isOwner ? (
+                    <RoleBadge role="OWNER" />
+                  ) : isMember ? (
                     <Button
                       type="button"
                       variant="outline"

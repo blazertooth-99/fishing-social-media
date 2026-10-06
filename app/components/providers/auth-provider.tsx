@@ -8,6 +8,10 @@ import React, {
   useState,
 } from "react";
 import { getAuthHeaders } from "@/lib/api/client";
+import {
+  getCachedSession,
+  invalidateSessionCache,
+} from "@/lib/api/session";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3067/api/v1";
@@ -72,22 +76,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(true);
       setAuthError(null);
 
-      const sessionResponse = await fetch(`${API_BASE_URL}/auth/session`, {
-        method: "GET",
-        credentials: "include",
-        headers: getAuthHeaders(),
-        cache: "no-store",
-      });
-
-      if (!sessionResponse.ok) {
-        setSession(null);
-        setUser(null);
-        return;
+      // Shared cached session — concurrent callers across the app reuse one
+      // request instead of bursting /auth/session into a 429.
+      let currentSession: Session | null = null;
+      try {
+        const cached = await getCachedSession();
+        currentSession = cached?.data ?? null;
+      } catch {
+        currentSession = null;
       }
-
-      const sessionJson = await sessionResponse.json();
-
-      const currentSession = sessionJson?.data;
 
       if (!currentSession?.user_id) {
         setSession(null);
@@ -205,6 +202,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (typeof window !== "undefined") {
         localStorage.removeItem("fishing_session_token");
       }
+      invalidateSessionCache();
 
       /**
        * Clear frontend state regardless

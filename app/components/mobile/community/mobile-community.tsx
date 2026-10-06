@@ -18,11 +18,17 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
 import {
+  isCommunityMember,
   joinCommunity,
   listCommunities,
   extractCommunityErrorMessage,
+  markCommunityJoined,
+  membershipButtonLabel,
+  notifyCommunityMembershipChanged,
+  withMembershipFlag,
   type ApiCommunity,
 } from "@/lib/api/communities";
+import { api } from "@/lib/api";
 import CreateCommunityDialog from "@/app/components/shared/community/create-community-dialog";
 
 export default function MobileCommunity() {
@@ -35,6 +41,21 @@ export default function MobileCommunity() {
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [joiningId, setJoiningId] = useState<string | null>(null);
+  // Viewer id for creator-ownership inference (list omits is_member flags).
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .getSession()
+      .then((session) => {
+        if (!cancelled) setCurrentUserId(session?.data?.user_id ?? null);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   async function handleRetry() {
     setLoading(true);
@@ -100,10 +121,15 @@ export default function MobileCommunity() {
   }, [communities, search]);
 
   function handleCommunityCreated(created: ApiCommunity) {
+    const owned = withMembershipFlag(created, "OWNER");
+    markCommunityJoined(owned);
     setCommunities((prev) => {
-      if (prev.some((c) => c.id === created.id)) return prev;
-      return [created, ...prev];
+      if (prev.some((c) => c.id === owned.id)) {
+        return prev.map((c) => (c.id === owned.id ? owned : c));
+      }
+      return [owned, ...prev];
     });
+    notifyCommunityMembershipChanged();
   }
 
   function openCommunity(community: ApiCommunity) {
@@ -115,21 +141,30 @@ export default function MobileCommunity() {
     community: ApiCommunity,
   ) {
     e.stopPropagation();
-    if (joiningId) return;
+    if (joiningId || isCommunityMember(community, currentUserId)) return;
     setJoiningId(community.id);
     try {
       await joinCommunity(community.slug || community.id);
+      markCommunityJoined(community);
       setCommunities((prev) =>
         prev.map((c) =>
           c.id === community.id
-            ? { ...c, is_member: true, member_count: (c.member_count ?? 0) + 1 }
+            ? withMembershipFlag(
+                { ...c, member_count: (c.member_count ?? 0) + 1 },
+                "MEMBER",
+              )
             : c,
         ),
       );
+      notifyCommunityMembershipChanged();
     } catch {
+      markCommunityJoined(community);
       setCommunities((prev) =>
-        prev.map((c) => (c.id === community.id ? { ...c, is_member: true } : c)),
+        prev.map((c) =>
+          c.id === community.id ? withMembershipFlag(c, "MEMBER") : c,
+        ),
       );
+      notifyCommunityMembershipChanged();
     } finally {
       setJoiningId(null);
     }
@@ -302,16 +337,26 @@ export default function MobileCommunity() {
                         <Button
                           type="button"
                           size="sm"
-                          disabled={joiningId === community.id || community.is_member === true}
+                          disabled={
+                            joiningId === community.id ||
+                            isCommunityMember(community, currentUserId)
+                          }
                           onClick={(e) => void handleJoin(e, community)}
-                          className="h-8 shrink-0 rounded-lg bg-cyan-500 px-3 text-xs hover:bg-cyan-600 disabled:opacity-60"
+                          variant={
+                            isCommunityMember(community, currentUserId)
+                              ? "outline"
+                              : undefined
+                          }
+                          className={
+                            isCommunityMember(community, currentUserId)
+                              ? "h-8 shrink-0 rounded-lg px-3 text-xs disabled:opacity-100"
+                              : "h-8 shrink-0 rounded-lg bg-cyan-500 px-3 text-xs text-white hover:bg-cyan-600 disabled:opacity-60"
+                          }
                         >
                           {joiningId === community.id ? (
                             <Loader2 size={14} className="animate-spin" />
-                          ) : community.is_member ? (
-                            "Joined"
                           ) : (
-                            "Join"
+                            membershipButtonLabel(community, currentUserId)
                           )}
                         </Button>
                       </div>

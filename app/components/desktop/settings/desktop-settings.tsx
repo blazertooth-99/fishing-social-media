@@ -65,30 +65,42 @@ export default function DesktopSettings() {
 
   const [activeSection, setActiveSection] = useState<SettingsSectionId>("privacy");
   const [checkingSession, setCheckingSession] = useState(true);
+  const [sessionError, setSessionError] = useState<string | null>(null);
   const [loggingOut, setLoggingOut] = useState(false);
 
   /*
    * ========================================
    * CHECK SESSION
+   * Only redirect when the server definitively says unauthenticated
+   * (null session). Transient network/API failures show a retry UI
+   * instead — they must never bounce a logged-in user to /login.
    * ========================================
    */
   useLayoutEffect(() => {
+    let cancelled = false;
     async function checkSession() {
+      setCheckingSession(true);
+      setSessionError(null);
       try {
         const session = await api.getSession();
+        if (cancelled) return;
         if (!session?.data) {
           router.replace("/login");
           return;
         }
       } catch (error) {
+        if (cancelled) return;
         console.error("SESSION CHECK ERROR:", error);
-        router.replace("/login");
+        setSessionError("Failed to verify your session. Check your connection and try again.");
       } finally {
-        setCheckingSession(false);
+        if (!cancelled) setCheckingSession(false);
       }
     }
 
     checkSession();
+    return () => {
+      cancelled = true;
+    };
   }, [router]);
 
   /*
@@ -162,6 +174,32 @@ export default function DesktopSettings() {
     return (
       <main className="flex min-h-screen items-center justify-center bg-slate-50">
         <p className="text-sm font-medium text-slate-500">Checking session...</p>
+      </main>
+    );
+  }
+
+  if (sessionError) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
+        <div className="w-full max-w-sm rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+          <p className="text-sm font-semibold text-slate-800">Connection problem</p>
+          <p className="mt-1 text-xs leading-5 text-slate-500">{sessionError}</p>
+          <div className="mt-4 flex gap-2">
+            <Button
+              onClick={() => router.back()}
+              variant="outline"
+              className="flex-1 rounded-xl"
+            >
+              Go back
+            </Button>
+            <Button
+              onClick={() => window.location.reload()}
+              className="flex-1 rounded-xl bg-slate-900 text-white hover:bg-slate-800"
+            >
+              Try again
+            </Button>
+          </div>
+        </div>
       </main>
     );
   }
