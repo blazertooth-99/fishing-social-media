@@ -1,29 +1,46 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import gsap from "gsap";
-import { MapPin, Navigation, Star, TrendingUp, Users } from "lucide-react";
+import { MapPin, Navigation, Star, TrendingUp } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
-import { fishingSpots } from "@/app/utils/discovery-data";
+import {
+  ApiFishingSpot,
+  formatSpotDistance,
+  formatSpotRating,
+} from "@/lib/api/fishing-spots";
 
-export default function DesktopFishingSpotsSidebar() {
+interface DesktopFishingSpotsSidebarProps {
+  spots?: ApiFishingSpot[];
+}
+
+export default function DesktopFishingSpotsSidebar({
+  spots = [],
+}: DesktopFishingSpotsSidebarProps) {
   const sidebarRef = useRef<HTMLDivElement>(null);
 
-  const popularSpots = [...fishingSpots]
-    .sort((a, b) => Number(b.rating) - Number(a.rating))
-    .slice(0, 4);
+  const popularSpots = useMemo(
+    () =>
+      [...spots]
+        .sort((a, b) => (b.average_rating ?? -1) - (a.average_rating ?? -1))
+        .slice(0, 4),
+    [spots],
+  );
 
-  const nearMeSpots = [...fishingSpots]
-    .sort((a, b) => {
-      const distanceA = Number.parseFloat(a.distance);
-      const distanceB = Number.parseFloat(b.distance);
-
-      return distanceA - distanceB;
-    })
-    .slice(0, 4);
+  const nearMeSpots = useMemo(
+    () =>
+      [...spots]
+        .sort((a, b) => {
+          const distanceA = a.distance_meters ?? Number.MAX_SAFE_INTEGER;
+          const distanceB = b.distance_meters ?? Number.MAX_SAFE_INTEGER;
+          return distanceA - distanceB;
+        })
+        .slice(0, 4),
+    [spots],
+  );
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -51,11 +68,16 @@ export default function DesktopFishingSpotsSidebar() {
           <div>
             <h2 className="font-bold text-slate-900">Popular Spots</h2>
 
-            <p className="text-xs text-slate-400">Trending among anglers</p>
+            <p className="text-xs text-slate-400">Top rated via API</p>
           </div>
         </div>
 
         <div className="mt-5 space-y-1">
+          {popularSpots.length === 0 && (
+            <p className="rounded-2xl bg-slate-50 p-3 text-xs text-slate-400">
+              No spots loaded yet.
+            </p>
+          )}
           {popularSpots.map((spot, index) => (
             <button
               key={spot.id}
@@ -75,7 +97,9 @@ export default function DesktopFishingSpotsSidebar() {
                 <div className="mt-1 flex items-center gap-1 text-xs text-slate-400">
                   <MapPin size={11} />
 
-                  <span className="truncate">{spot.location}</span>
+                  <span className="truncate">
+                    {spot.lat.toFixed(3)}, {spot.lng.toFixed(3)} • {spot.water_type}
+                  </span>
                 </div>
               </div>
 
@@ -83,7 +107,7 @@ export default function DesktopFishingSpotsSidebar() {
               <div className="flex shrink-0 items-center gap-1 text-xs font-medium">
                 <Star size={12} className="fill-yellow-400 text-yellow-400" />
 
-                {spot.rating}
+                {formatSpotRating(spot.average_rating, spot.review_count)}
               </div>
             </button>
           ))}
@@ -107,11 +131,16 @@ export default function DesktopFishingSpotsSidebar() {
           <div>
             <h2 className="font-bold text-slate-900">Near Me</h2>
 
-            <p className="text-xs text-slate-400">Fishing spots around you</p>
+            <p className="text-xs text-slate-400">Sorted by distance_meters</p>
           </div>
         </div>
 
         <div className="mt-5 space-y-3">
+          {nearMeSpots.length === 0 && (
+            <p className="rounded-2xl bg-slate-50 p-3 text-xs text-slate-400">
+              No spots loaded yet.
+            </p>
+          )}
           {nearMeSpots.map((spot) => (
             <button
               key={spot.id}
@@ -132,12 +161,12 @@ export default function DesktopFishingSpotsSidebar() {
                     </p>
 
                     <span className="shrink-0 text-xs font-medium text-cyan-600">
-                      {spot.distance}
+                      {formatSpotDistance(spot.distance_meters)}
                     </span>
                   </div>
 
                   <p className="mt-1 truncate text-xs text-slate-400">
-                    {spot.location}
+                    {spot.lat.toFixed(3)}, {spot.lng.toFixed(3)}
                   </p>
 
                   <div className="mt-2 flex items-center gap-3 text-xs text-slate-400">
@@ -147,14 +176,12 @@ export default function DesktopFishingSpotsSidebar() {
                         className="fill-yellow-400 text-yellow-400"
                       />
 
-                      {spot.rating}
+                      {formatSpotRating(spot.average_rating, spot.review_count)}
                     </span>
 
-                    <span className="flex items-center gap-1">
-                      <Users size={11} />
-
-                      {spot.anglers}
-                    </span>
+                    <Badge variant="secondary" className="text-[10px]">
+                      {spot.privacy}
+                    </Badge>
                   </div>
                 </div>
               </div>

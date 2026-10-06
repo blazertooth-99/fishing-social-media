@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { RefreshCw, Users } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { ChevronRight, RefreshCw, Users } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -39,10 +40,21 @@ function initials(name: string) {
     .join("");
 }
 
-function FollowUserRow({ user }: { user: ApiFollowUser }) {
+function FollowUserRow({
+  user,
+  onSelect,
+}: {
+  user: ApiFollowUser;
+  onSelect: (username: string) => void;
+}) {
   const name = user.display_name || user.username;
   return (
-    <div className="flex items-center gap-3 px-1 py-2.5">
+    <button
+      type="button"
+      onClick={() => onSelect(user.username)}
+      title={`Lihat profil @${user.username}`}
+      className="flex w-full items-center gap-3 rounded-xl px-1 py-2.5 text-left transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/60"
+    >
       <Avatar className="size-11 shrink-0">
         <AvatarImage
           src={getAvatarUrl(user.avatar_media_id) ?? undefined}
@@ -59,7 +71,11 @@ function FollowUserRow({ user }: { user: ApiFollowUser }) {
         </p>
         <p className="truncate text-xs text-slate-400">@{user.username}</p>
       </div>
-    </div>
+      <ChevronRight
+        size={16}
+        className="shrink-0 text-slate-300 dark:text-slate-600"
+      />
+    </button>
   );
 }
 
@@ -80,6 +96,12 @@ export default function FollowListDialog({
   const [following, setFollowing] = useState<ApiFollowUser[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
+
+  function handleSelectUser(username: string) {
+    onOpenChange(false);
+    router.push(`/users/${encodeURIComponent(username)}`);
+  }
 
   // Fetch the active tab (cached per open session).
   useEffect(() => {
@@ -196,7 +218,11 @@ export default function FollowListDialog({
           ) : visible && visible.length > 0 ? (
             <div className="divide-y divide-slate-100 dark:divide-slate-800">
               {visible.map((u) => (
-                <FollowUserRow key={u.user_id} user={u} />
+                <FollowUserRow
+                  key={u.user_id}
+                  user={u}
+                  onSelect={handleSelectUser}
+                />
               ))}
             </div>
           ) : (

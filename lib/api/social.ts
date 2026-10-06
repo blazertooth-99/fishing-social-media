@@ -53,6 +53,30 @@ export async function listFollowing(
   return res.data ?? [];
 }
 
+/**
+ * POST /api/v1/users/{username}/follow — Auth required.
+ * Idempotent, returns { data: { message } }.
+ */
+export async function followUser(username: string): Promise<string> {
+  const res = await apiFetch<{ data: { message: string } }>(
+    `/users/${encodeURIComponent(username)}/follow`,
+    { method: "POST" },
+  );
+  return res.data?.message ?? `Successfully followed ${username}`;
+}
+
+/**
+ * DELETE /api/v1/users/{username}/follow — Auth required.
+ * Idempotent, returns { data: { message } }.
+ */
+export async function unfollowUser(username: string): Promise<string> {
+  const res = await apiFetch<{ data: { message: string } }>(
+    `/users/${encodeURIComponent(username)}/follow`,
+    { method: "DELETE" },
+  );
+  return res.data?.message ?? `Successfully unfollowed ${username}`;
+}
+
 export function extractSocialErrorMessage(
   err: unknown,
   fallback: string,

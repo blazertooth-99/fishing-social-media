@@ -1,9 +1,11 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import {
   AtSign,
   Bell,
   CalendarDays,
+  ChevronRight,
   Heart,
   MessageCircle,
   UserPlus,
@@ -96,16 +98,32 @@ export function NotificationRow({
   notification: ApiNotification;
   onMarkAsRead: (id: string) => void;
 }) {
+  const router = useRouter();
   const actorName =
     notification.actor?.display_name ||
     notification.actor?.username ||
     "Someone";
+  const actorUsername = notification.actor?.username ?? null;
   const unread = !notification.is_read;
+
+  function handleClick() {
+    onMarkAsRead(notification.id);
+    // Deep-link ke profil publik actor — mencakup case FOLLOW
+    // (follower baru) maupun event lain yang membawa actor.
+    if (actorUsername) {
+      router.push(`/users/${encodeURIComponent(actorUsername)}`);
+    }
+  }
 
   return (
     <button
       type="button"
-      onClick={() => onMarkAsRead(notification.id)}
+      onClick={handleClick}
+      title={
+        actorUsername
+          ? `Lihat profil @${actorUsername}`
+          : describeNotificationEvent(notification.event_type)
+      }
       className={`flex w-full items-start gap-3 rounded-2xl border p-4 text-left transition-colors ${
         unread
           ? "border-cyan-100 bg-cyan-50/60 hover:bg-cyan-50"
@@ -137,6 +155,13 @@ export function NotificationRow({
         <span
           className="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full bg-cyan-500"
           aria-label="Unread"
+        />
+      )}
+      {actorUsername && (
+        <ChevronRight
+          size={16}
+          className="mt-1.5 shrink-0 text-slate-300"
+          aria-hidden
         />
       )}
     </button>

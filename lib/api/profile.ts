@@ -127,6 +127,46 @@ export async function getMyProfile(): Promise<UserProfile> {
 }
 
 // ======================================================
+// GET PUBLIC PROFILE BY USERNAME
+// GET /api/v1/users/{username} — Auth optional (enriches relationship).
+// Response shape sama dengan /users/me, relationship =
+// SELF | FOLLOWING | NOT_FOLLOWING.
+// ======================================================
+
+export async function getPublicProfile(username: string): Promise<UserProfile> {
+  const url = `${API_BASE_URL}/users/${encodeURIComponent(username)}`;
+
+  const response = await fetch(url, {
+    method: "GET",
+    credentials: "include",
+    cache: "no-store",
+    headers: getAuthHeaders(),
+  });
+
+  const result: unknown = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    throw new Error(getApiErrorMessage(result, response.status));
+  }
+
+  if (typeof result !== "object" || result === null) {
+    throw new Error("Invalid profile response from API.");
+  }
+
+  const data = (
+    result as {
+      data?: UserProfile;
+    }
+  ).data;
+
+  if (!data) {
+    throw new Error("Profile data is missing from API response.");
+  }
+
+  return data;
+}
+
+// ======================================================
 // UPDATE MY PROFILE
 // ======================================================
 

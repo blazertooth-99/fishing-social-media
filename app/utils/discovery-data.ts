@@ -56,84 +56,8 @@ export const explorePosts: ExplorePost[] = [
   },
 ];
 
-export const fishingSpots = [
-  {
-    id: 1,
-    name: "Waduk Jatiluhur",
-    location: "Purwakarta, Jawa Barat",
-    distance: "12 km",
-    rating: 4.8,
-    anglers: 342,
-    fish: ["Patin", "Nila", "Gabus"],
-    image: Fish2,
-    description:
-      "Salah satu spot favorit untuk freshwater fishing dengan area yang cukup luas.",
-    recommended: true,
-  },
-  {
-    id: 2,
-    name: "Situ Patenggang",
-    location: "Ciwidey, Jawa Barat",
-    distance: "27 km",
-    rating: 4.6,
-    anglers: 186,
-    fish: ["Nila", "Mas"],
-    image: Fish1,
-    description:
-      "Spot dengan suasana tenang dan pemandangan yang cocok untuk weekend fishing.",
-    recommended: true,
-  },
-  {
-    id: 3,
-    name: "Sungai Serayu",
-    location: "Banyumas, Jawa Tengah",
-    distance: "41 km",
-    rating: 4.7,
-    anglers: 214,
-    fish: ["Baung", "Gabus", "Bawal"],
-    image: Fish2,
-    description: "Spot sungai dengan berbagai teknik yang bisa digunakan.",
-    recommended: false,
-  },
-  {
-    id: 4,
-    name: "Waduk Jatiluhur",
-    location: "Purwakarta, Jawa Barat",
-    distance: "12 km",
-    rating: 4.8,
-    anglers: 342,
-    fish: ["Patin", "Nila", "Gabus"],
-    image: Fish2,
-    description:
-      "Salah satu spot favorit untuk freshwater fishing dengan area yang cukup luas.",
-    recommended: true,
-  },
-  {
-    id: 5,
-    name: "Waduk Jatiluhur",
-    location: "Purwakarta, Jawa Barat",
-    distance: "12 km",
-    rating: 4.8,
-    anglers: 342,
-    fish: ["Patin", "Nila", "Gabus"],
-    image: Fish2,
-    description:
-      "Salah satu spot favorit untuk freshwater fishing dengan area yang cukup luas.",
-    recommended: true,
-  },
-  {
-    id: 6,
-    name: "Waduk Jatiluhur",
-    location: "Purwakarta, Jawa Barat",
-    distance: "12 km",
-    rating: 4.8,
-    anglers: 342,
-    fish: ["Patin", "Nila", "Gabus"],
-    image: Fish2,
-    description:
-      "Salah satu spot favorit untuk freshwater fishing dengan area yang cukup luas.",
-    recommended: true,
-  },
-];
+// NOTE: fishing-spot dummy data removed —
+// /fishing-spots now loads live data via lib/api/fishing-spots.ts
+// (GET /locations/spots, /bounds, /nearby, /discovery/spots).
 
 

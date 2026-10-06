@@ -1,86 +1,46 @@
 "use client";
 
-import { useLayoutEffect, useRef, useState } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import gsap from "gsap";
 import {
   Bell,
-  Bookmark,
   ChevronRight,
   Fish,
   MapPin,
   Search,
   SlidersHorizontal,
   Star,
-  Users,
 } from "lucide-react";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 
-interface FishingSpot {
-  id: string;
-  name: string;
-  image: string;
-  location: string;
-  distance: string;
-  rating: number;
-  fish: string[];
-  anglers: number;
-  description?: string;
-  isSaved?: boolean;
-}
-
-const fishingSpots: FishingSpot[] = [
-  {
-    id: "spot-001",
-    name: "Waduk Gajah Mungkur",
-    image: "https://images.unsplash.com/photo-1500534623283-312aade485b7",
-    location: "Wonogiri",
-    distance: "12 km",
-    rating: 4.8,
-    fish: ["Snakehead", "Patin"],
-    anglers: 128,
-    description: "Spot favorit untuk casting dan predator fishing.",
-  },
-  {
-    id: "spot-002",
-    name: "Pantai Jatimalang",
-    image: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e",
-    location: "Purworejo",
-    distance: "28 km",
-    rating: 4.6,
-    fish: ["GT", "Kakap"],
-    anglers: 94,
-    description: "Pantai dengan aktivitas mancing yang cukup ramai.",
-  },
-  {
-    id: "spot-003",
-    name: "Rawa Pening",
-    image: "https://images.unsplash.com/photo-1501785888041-af3ef285b470",
-    location: "Ambarawa",
-    distance: "42 km",
-    rating: 4.7,
-    fish: ["Nila", "Patin"],
-    anglers: 76,
-    description: "Spot air tawar dengan banyak pilihan teknik.",
-  },
-];
+import {
+  ApiFishingSpot,
+  formatSpotDistance,
+  formatSpotRating,
+} from "@/lib/api/fishing-spots";
+import { useFishingSpots } from "@/app/components/shared/use-fishing-spots";
+import CreateFishingSpotDialog from "@/app/components/shared/create-fishing-spot-dialog";
 
 const filters = [
   "Nearby",
   "Popular",
-  "Fresh",
-  "Predator",
   "Freshwater",
   "Saltwater",
-];
+  "Brackish",
+] as const;
+
+type Filter = (typeof filters)[number];
 
 export default function MobileFishingSpot() {
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const [activeFilter, setActiveFilter] = useState("Nearby");
-  const [search, setSearch] = useState("");
+  const [activeFilter, setActiveFilter] = useState<Filter>("Nearby");
+  const { spots, query, setQuery, isLoading, error, reload, prependSpot } =
+    useFishingSpots({ limit: 20 });
 
   useLayoutEffect(() => {
     const ctx = gsap.context(() => {
@@ -112,31 +72,34 @@ export default function MobileFishingSpot() {
             duration: 0.35,
           },
           "-=0.2",
-        )
-        .from(
-          ".spot-card",
-          {
-            y: 25,
-            opacity: 0,
-            stagger: 0.1,
-            duration: 0.45,
-          },
-          "-=0.15",
         );
     }, containerRef);
 
     return () => ctx.revert();
   }, []);
 
-  const filteredSpots = fishingSpots.filter((spot) => {
-    const query = search.toLowerCase();
-
-    return (
-      spot.name.toLowerCase().includes(query) ||
-      spot.location.toLowerCase().includes(query) ||
-      spot.fish.some((fish) => fish.toLowerCase().includes(query))
-    );
-  });
+  const visibleSpots = useMemo(() => {
+    const items = [...spots];
+    switch (activeFilter) {
+      case "Popular":
+        return items.sort(
+          (a, b) => (b.average_rating ?? -1) - (a.average_rating ?? -1),
+        );
+      case "Freshwater":
+      case "Saltwater":
+      case "Brackish":
+        return items.filter(
+          (spot) => spot.water_type === activeFilter.toUpperCase(),
+        );
+      case "Nearby":
+      default:
+        return items.sort(
+          (a, b) =>
+            (a.distance_meters ?? Number.MAX_SAFE_INTEGER) -
+            (b.distance_meters ?? Number.MAX_SAFE_INTEGER),
+        );
+    }
+  }, [spots, activeFilter]);
 
   return (
     <main ref={containerRef} className="min-h-screen bg-slate-50 pb-24">
@@ -171,7 +134,7 @@ export default function MobileFishingSpot() {
       </header>
 
       {/* =====================================================
-          SEARCH
+          SEARCH — GET /discovery/spots?q=
       ====================================================== */}
 
       <section className="spot-search bg-white px-4 pb-4">
@@ -182,8 +145,8 @@ export default function MobileFishingSpot() {
           />
 
           <Input
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
             placeholder="Search fishing spot..."
             className="h-11 rounded-xl border-slate-200 bg-slate-50 pl-10 pr-11 text-sm shadow-none focus-visible:ring-emerald-500"
           />
@@ -205,15 +168,22 @@ export default function MobileFishingSpot() {
       <section className="flex items-center gap-2 bg-white px-4 pb-4">
         <MapPin size={15} className="text-emerald-600" />
 
-        <span className="text-xs text-slate-500">Fishing spots near</span>
+        <span className="text-xs text-slate-500">Live from API</span>
 
-        <button className="text-xs font-semibold text-slate-900">Kudus</button>
+        <span className="text-xs font-semibold text-slate-900">
+          {isLoading ? "Loading..." : `${visibleSpots.length} spots`}
+        </span>
 
-        <ChevronRight size={14} className="text-slate-400" />
+        <div className="ml-auto">
+          <CreateFishingSpotDialog
+            onCreated={prependSpot}
+            triggerClassName="h-8 rounded-full bg-emerald-600 px-3 text-xs hover:bg-emerald-700"
+          />
+        </div>
       </section>
 
       {/* =====================================================
-          FILTERS
+          FILTERS (client-side over API water_type / rating)
       ====================================================== */}
 
       <section className="spot-filter overflow-x-auto border-b border-slate-100 bg-white px-4 pb-4 scrollbar-none">
@@ -251,7 +221,7 @@ export default function MobileFishingSpot() {
             </h2>
 
             <p className="mt-1 text-xs text-slate-400">
-              Spots shared by anglers around you
+              Natural spots from GET /locations/spots
             </p>
           </div>
 
@@ -260,30 +230,60 @@ export default function MobileFishingSpot() {
           </button>
         </div>
 
-        {/* ===================================================
-            SPOT LIST
-        ==================================================== */}
+        {error && (
+          <div className="mb-4 rounded-2xl border border-red-100 bg-red-50 p-4 text-xs text-red-600">
+            <p className="font-semibold">Failed to load spots</p>
+            <p className="mt-1">{error}</p>
+            <Button
+              variant="outline"
+              size="sm"
+              className="mt-3"
+              onClick={() => void reload()}
+            >
+              Try again
+            </Button>
+          </div>
+        )}
 
-        <div className="space-y-4">
-          {filteredSpots.map((spot) => (
-            <FishingSpotCard key={spot.id} spot={spot} />
-          ))}
-        </div>
-
-        {filteredSpots.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-slate-100">
-              <Fish size={24} className="text-slate-400" />
+        {isLoading ? (
+          <div className="space-y-4">
+            {Array.from({ length: 3 }).map((_, index) => (
+              <div
+                key={index}
+                className="animate-pulse overflow-hidden rounded-2xl border border-slate-200 bg-white"
+              >
+                <div className="aspect-[16/9] bg-slate-100" />
+                <div className="space-y-2 p-4">
+                  <div className="h-4 w-2/3 rounded bg-slate-100" />
+                  <div className="h-3 w-1/2 rounded bg-slate-100" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <>
+            <div className="space-y-4">
+              {visibleSpots.map((spot) => (
+                <FishingSpotCard key={spot.id} spot={spot} />
+              ))}
             </div>
 
-            <h3 className="mt-4 text-sm font-semibold text-slate-800">
-              No fishing spot found
-            </h3>
+            {visibleSpots.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-16 text-center">
+                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-slate-100">
+                  <Fish size={24} className="text-slate-400" />
+                </div>
 
-            <p className="mt-1 max-w-[250px] text-xs leading-5 text-slate-400">
-              Try another location, fish species, or search keyword.
-            </p>
-          </div>
+                <h3 className="mt-4 text-sm font-semibold text-slate-800">
+                  No fishing spot found
+                </h3>
+
+                <p className="mt-1 max-w-[250px] text-xs leading-5 text-slate-400">
+                  Try another search keyword, water-type filter, or add a new spot.
+                </p>
+              </div>
+            )}
+          </>
         )}
       </section>
     </main>
@@ -291,56 +291,32 @@ export default function MobileFishingSpot() {
 }
 
 /* =============================================================
-   FISHING SPOT CARD
+   FISHING SPOT CARD — API fields only (no dummy image/fish/anglers)
 ============================================================= */
 
-function FishingSpotCard({ spot }: { spot: FishingSpot }) {
-  const [saved, setSaved] = useState(spot.isSaved ?? false);
-
+function FishingSpotCard({ spot }: { spot: ApiFishingSpot }) {
   return (
     <article className="spot-card overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-      {/* IMAGE */}
+      {/* MAP PLACEHOLDER — API returns no photos */}
 
-      <div className="relative aspect-[16/9] overflow-hidden">
-        <img
-          src={spot.image}
-          alt={spot.name}
-          className="h-full w-full object-cover transition-transform duration-500 hover:scale-105"
-        />
-
-        {/* Gradient */}
-
-        <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/60 to-transparent" />
-
-        {/* Rating */}
-
-        <div className="absolute left-3 top-3 flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-1.5 text-xs font-semibold shadow-sm">
-          <Star size={12} className="fill-amber-400 text-amber-400" />
-
-          {spot.rating}
+      <div className="relative flex aspect-[16/9] flex-col justify-between overflow-hidden bg-gradient-to-br from-emerald-500 via-teal-600 to-cyan-700 p-4 text-white">
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-1.5 text-xs font-semibold text-slate-800 shadow-sm">
+            <Star size={12} className="fill-amber-400 text-amber-400" />
+            {formatSpotRating(spot.average_rating, spot.review_count)}
+          </div>
+          <Badge className="rounded-full border-0 bg-black/30 text-white backdrop-blur-sm">
+            {spot.privacy}
+          </Badge>
         </div>
 
-        {/* Save */}
+        <div className="flex items-center gap-1.5 text-sm font-semibold">
+          <MapPin size={15} />
+          {spot.lat.toFixed(4)}, {spot.lng.toFixed(4)}
+        </div>
 
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setSaved((prev) => !prev)}
-          className={`absolute right-2 top-2 h-9 w-9 rounded-full backdrop-blur-sm ${
-            saved
-              ? "bg-white text-emerald-600"
-              : "bg-black/30 text-white hover:bg-white hover:text-slate-900"
-          }`}
-        >
-          <Bookmark size={17} className={saved ? "fill-current" : ""} />
-        </Button>
-
-        {/* Distance */}
-
-        <div className="absolute bottom-3 left-3 flex items-center gap-1.5 text-xs font-medium text-white">
-          <MapPin size={13} />
-
-          {spot.distance}
+        <div className="absolute bottom-3 right-3 rounded-full bg-black/30 px-2.5 py-1 text-xs font-medium backdrop-blur-sm">
+          {formatSpotDistance(spot.distance_meters)}
         </div>
       </div>
 
@@ -356,7 +332,9 @@ function FishingSpotCard({ spot }: { spot: FishingSpot }) {
             <div className="mt-1 flex items-center gap-1 text-xs text-slate-400">
               <MapPin size={12} />
 
-              <span>{spot.location}</span>
+              <span>
+                {spot.lat.toFixed(4)}, {spot.lng.toFixed(4)}
+              </span>
             </div>
           </div>
 
@@ -368,36 +346,28 @@ function FishingSpotCard({ spot }: { spot: FishingSpot }) {
           </button>
         </div>
 
-        {/* Description */}
+        {/* API META */}
 
-        {spot.description && (
-          <p className="mt-3 line-clamp-2 text-xs leading-5 text-slate-500">
-            {spot.description}
-          </p>
-        )}
-
-        {/* Fish */}
-
-        <div className="mt-3 flex gap-1.5 overflow-x-auto scrollbar-none">
-          {spot.fish.map((fish) => (
-            <span
-              key={fish}
-              className="flex shrink-0 items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1.5 text-[10px] font-medium text-emerald-700"
-            >
-              <Fish size={11} />
-
-              {fish}
-            </span>
-          ))}
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          <span className="shrink-0 rounded-full bg-emerald-50 px-2.5 py-1.5 text-[10px] font-medium text-emerald-700">
+            {spot.water_type}
+          </span>
+          <span className="shrink-0 rounded-full bg-slate-100 px-2.5 py-1.5 text-[10px] font-medium text-slate-600">
+            {typeof spot.review_count === "number"
+              ? `${spot.review_count} review${spot.review_count === 1 ? "" : "s"}`
+              : "No reviews yet"}
+          </span>
+          <span className="shrink-0 rounded-full bg-slate-100 px-2.5 py-1.5 text-[10px] font-medium text-slate-600">
+            {formatSpotDistance(spot.distance_meters)} away
+          </span>
         </div>
 
         {/* Footer */}
 
         <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3">
           <div className="flex items-center gap-1.5 text-xs text-slate-400">
-            <Users size={14} />
-
-            <span>{spot.anglers} anglers visited</span>
+            <MapPin size={14} />
+            <span>{spot.privacy} location</span>
           </div>
 
           <button
