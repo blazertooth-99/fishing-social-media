@@ -106,9 +106,23 @@ export async function markAllNotificationsAsRead(): Promise<number> {
 /** Event name broadcast when the unread count may have changed. */
 export const NOTIFICATIONS_READ_EVENT = "fishconnect:notifications-read";
 
+export const NOTIFICATION_RECEIVED_EVENT = "fishconnect:notification-received";
+
 export function broadcastNotificationsRead(): void {
   if (typeof window !== "undefined") {
     window.dispatchEvent(new Event(NOTIFICATIONS_READ_EVENT));
+  }
+}
+
+export function broadcastNotificationReceived(
+  notification: ApiNotification,
+): void {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(
+      new CustomEvent<ApiNotification>(NOTIFICATION_RECEIVED_EVENT, {
+        detail: notification,
+      }),
+    );
   }
 }
 

@@ -44,6 +44,7 @@ export interface ApiPost {
   media: ApiPostMedia[];
   like_count: number;
   comment_count: number;
+  share_count?: number;
   is_liked?: boolean;
   created_at: string;
   updated_at: string;
@@ -260,6 +261,176 @@ export async function getPostById(id: string): Promise<ApiPost> {
     { method: "GET" },
   );
   return res.data;
+}
+
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return value !== null && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+export interface LikeStatus {
+  is_liked: boolean;
+  like_count: number;
+}
+
+function readLikeStatus(payload: unknown, fallback: LikeStatus): LikeStatus {
+  const envelope = asRecord(payload);
+  const data = asRecord(envelope?.data) ?? envelope ?? {};
+  const isLiked = data.is_liked;
+  const likeCount = data.like_count;
+  return {
+    is_liked: typeof isLiked === "boolean" ? isLiked : fallback.is_liked,
+    like_count:
+      typeof likeCount === "number" && Number.isFinite(likeCount)
+        ? Math.max(0, likeCount)
+        : fallback.like_count,
+  };
+}
+
+export async function likePost(
+  id: string,
+  fallback: LikeStatus = { is_liked: true, like_count: 0 },
+): Promise<LikeStatus> {
+  const res = await apiFetch<unknown>(`/posts/${encodeURIComponent(id)}/like`, {
+    method: "POST",
+  });
+  return readLikeStatus(res, fallback);
+}
+
+export async function unlikePost(
+  id: string,
+  fallback: LikeStatus = { is_liked: false, like_count: 0 },
+): Promise<LikeStatus> {
+  const res = await apiFetch<unknown>(`/posts/${encodeURIComponent(id)}/like`, {
+    method: "DELETE",
+  });
+  return readLikeStatus(res, fallback);
+}
+
+export async function getPostLikeStatus(id: string): Promise<LikeStatus> {
+  const res = await apiFetch<unknown>(
+    `/posts/${encodeURIComponent(id)}/like-status`,
+    { method: "GET" },
+  );
+  return readLikeStatus(res, { is_liked: false, like_count: 0 });
+}
+
+export interface ApiComment {
+  id: string;
+  post_id?: string;
+  author_id?: string;
+  author_username?: string;
+  author_display_name?: string;
+  author_avatar_media_id?: string | null;
+  content: string;
+  parent_comment_id?: string | null;
+  created_at: string;
+  updated_at?: string;
+  [key: string]: unknown;
+}
+
+function normalizeComment(value: unknown): ApiComment | null {
+  const record = asRecord(value);
+  if (!record) return null;
+  const id = record.id;
+  const content = record.content;
+  if (typeof id !== "string" || typeof content !== "string") return null;
+  const createdAt = record.created_at;
+  return {
+    ...record,
+    id,
+    content,
+    author_id: typeof record.author_id === "string" ? record.author_id : "",
+    author_username:
+      typeof record.author_username === "string" ? record.author_username : "",
+    author_display_name:
+      typeof record.author_display_name === "string"
+        ? record.author_display_name
+        : "Angler",
+    parent_comment_id:
+      typeof record.parent_comment_id === "string"
+        ? record.parent_comment_id
+        : null,
+    created_at: typeof createdAt === "string" ? createdAt : "",
+  };
+}
+
+function unwrapComment(payload: unknown): ApiComment | null {
+  const envelope = asRecord(payload);
+  if (!envelope) return null;
+  const data = asRecord(envelope.data) ?? envelope;
+  const nested = asRecord(data.comment) ?? asRecord(data.data);
+  return normalizeComment(nested ?? data);
+}
+
+export async function listComments(
+  postId: string,
+  opts?: { limit?: number; cursor?: string | null },
+): Promise<{ items: ApiComment[]; nextCursor: string | null; hasMore: boolean }> {
+  const params = new URLSearchParams();
+  params.set("limit", String(opts?.limit ?? 20));
+  if (opts?.cursor) params.set("cursor", opts.cursor);
+
+  const res = await apiFetch<{
+    data?: unknown;
+    pagination?: Pagination | null;
+  }>(`/posts/${encodeURIComponent(postId)}/comments?${params.toString()}`, {
+    method: "GET",
+  });
+
+  const container = asRecord(res.data);
+  const raw = Array.isArray(res.data)
+    ? res.data
+    : Array.isArray(container?.items)
+      ? container.items
+      : Array.isArray(container?.comments)
+        ? container.comments
+        : [];
+
+  const collected: ApiComment[] = [];
+  const seen = new Set<string>();
+  function collect(value: unknown) {
+    const comment = normalizeComment(value);
+    if (comment && !seen.has(comment.id)) {
+      seen.add(comment.id);
+      collected.push(comment);
+    }
+    const record = asRecord(value);
+    const replies = record?.replies;
+    if (Array.isArray(replies)) {
+      for (const reply of replies) collect(reply);
+    }
+  }
+  for (const item of raw) collect(item);
+
+  return {
+    items: collected,
+    nextCursor: res.pagination?.next_cursor ?? null,
+    hasMore:
+      res.pagination?.has_more === true &&
+      Boolean(res.pagination?.next_cursor),
+  };
+}
+
+export async function createComment(
+  postId: string,
+  content: string,
+  parentCommentId?: string | null,
+): Promise<ApiComment> {
+  const res = await apiFetch<unknown>(
+    `/posts/${encodeURIComponent(postId)}/comments`,
+    {
+      method: "POST",
+      body: JSON.stringify({
+        content: content.trim(),
+        parent_comment_id: parentCommentId ?? null,
+      }),
+    },
+  );
+  const comment = unwrapComment(res);
+  if (!comment) throw new Error("Invalid comment response from server");
+  return comment;
 }
 
 /**

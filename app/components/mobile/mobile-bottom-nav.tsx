@@ -27,6 +27,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { navigation } from "@/app/utils/constant";
 import {
   NOTIFICATIONS_READ_EVENT,
+  NOTIFICATION_RECEIVED_EVENT,
   getUnreadNotificationCount,
 } from "@/lib/api/notifications";
 
@@ -55,10 +56,15 @@ export default function MobileBottomNav() {
       }
     }
     window.addEventListener(NOTIFICATIONS_READ_EVENT, onNotificationsRead);
+    window.addEventListener(NOTIFICATION_RECEIVED_EVENT, onNotificationsRead);
     return () => {
       cancelled = true;
       window.removeEventListener(
         NOTIFICATIONS_READ_EVENT,
+        onNotificationsRead,
+      );
+      window.removeEventListener(
+        NOTIFICATION_RECEIVED_EVENT,
         onNotificationsRead,
       );
     };

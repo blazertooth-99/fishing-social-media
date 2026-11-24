@@ -1,15 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import {
-  Bookmark,
-  Heart,
-  MapPin,
-  MessageCircle,
-  MoreHorizontal,
-  Pencil,
-  Share2,
-} from "lucide-react";
+import { Bookmark, MapPin, MoreHorizontal, Pencil } from "lucide-react";
 
 import Image from "next/image";
 
@@ -26,6 +18,7 @@ import {
 
 import EditPostDialog from "@/app/components/shared/post/edit-post-dialog";
 import CommunityTag from "@/app/components/shared/post/community-tag";
+import PostActions from "@/app/components/shared/post/post-actions";
 
 import {
   formatRelativeTime,
@@ -176,38 +169,11 @@ export default function DesktopFishingPost({
       {/* ACTION */}
       <div className="p-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1">
-            <Button
-              variant="ghost"
-              size="sm"
-              className={`gap-2 rounded-xl px-2 ${
-                post.is_liked ? "text-red-500" : "text-slate-500 hover:text-red-500"
-              }`}
-            >
-              <Heart
-                size={19}
-                fill={post.is_liked ? "currentColor" : "none"}
-              />
-              {post.like_count}
-            </Button>
-
-            <Button
-              variant="ghost"
-              size="sm"
-              className="gap-2 rounded-xl px-2 text-slate-500"
-            >
-              <MessageCircle size={19} />
-              {post.comment_count}
-            </Button>
-
-            <Button
-              variant="ghost"
-              size="icon"
-              className="rounded-xl text-slate-500"
-            >
-              <Share2 size={18} />
-            </Button>
-          </div>
+          <PostActions
+            post={post}
+            currentUserId={currentUserId}
+            onPostUpdated={onPostUpdated}
+          />
 
           <Button
             variant="ghost"

@@ -1,13 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import {
-  Heart,
-  MessageCircle,
-  MoreHorizontal,
-  Pencil,
-  Share2,
-} from "lucide-react";
+import { MoreHorizontal, Pencil } from "lucide-react";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -22,6 +16,7 @@ import Image from "next/image";
 
 import EditPostDialog from "@/app/components/shared/post/edit-post-dialog";
 import CommunityTag from "@/app/components/shared/post/community-tag";
+import PostActions from "@/app/components/shared/post/post-actions";
 
 import {
   formatRelativeTime,
@@ -137,31 +132,12 @@ export default function MobileFishingPost({
 
       {/* ACTION */}
       <div className="flex items-center justify-between px-2 py-2">
-        <div className="flex items-center">
-          <Button
-            variant="ghost"
-            size="sm"
-            className={`h-8 gap-1 px-2 text-[11px] ${
-              post.is_liked ? "text-red-500" : "text-slate-500"
-            }`}
-          >
-            <Heart size={14} fill={post.is_liked ? "currentColor" : "none"} />
-            {post.like_count}
-          </Button>
-
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 gap-1 px-2 text-[11px] text-slate-500"
-          >
-            <MessageCircle size={14} />
-            {post.comment_count}
-          </Button>
-
-          <Button variant="ghost" size="icon" className="h-8 w-8">
-            <Share2 size={14} />
-          </Button>
-        </div>
+        <PostActions
+          post={post}
+          currentUserId={currentUserId}
+          onPostUpdated={onPostUpdated}
+          compact
+        />
 
         {locationLabel && (
           <span className="truncate pl-2 text-[10px] text-slate-400">

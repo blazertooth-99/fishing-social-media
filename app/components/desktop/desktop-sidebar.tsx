@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { usePathname, useRouter } from "next/navigation";
 import {
   NOTIFICATIONS_READ_EVENT,
+  NOTIFICATION_RECEIVED_EVENT,
   getUnreadNotificationCount,
 } from "@/lib/api/notifications";
 import { useJoinedCommunities } from "@/app/components/shared/community/use-joined-communities";
@@ -51,9 +52,14 @@ const Sidebar = () => {
       }
     }
     window.addEventListener(NOTIFICATIONS_READ_EVENT, onNotificationsRead);
+    window.addEventListener(NOTIFICATION_RECEIVED_EVENT, onNotificationsRead);
     return () => {
       cancelled = true;
       window.removeEventListener(NOTIFICATIONS_READ_EVENT, onNotificationsRead);
+      window.removeEventListener(
+        NOTIFICATION_RECEIVED_EVENT,
+        onNotificationsRead,
+      );
     };
   }, [pathname]);
 

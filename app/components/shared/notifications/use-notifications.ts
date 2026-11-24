@@ -8,6 +8,7 @@ import {
   listNotifications,
   markAllNotificationsAsRead,
   markNotificationAsRead,
+  NOTIFICATION_RECEIVED_EVENT,
   type ApiNotification,
   type NotificationFilter,
 } from "@/lib/api/notifications";
@@ -107,6 +108,24 @@ export function useNotifications() {
     init();
     return () => {
       cancelled = true;
+    };
+  }, [filter]);
+
+  useEffect(() => {
+    const onReceived = (event: Event) => {
+      const incoming = (event as CustomEvent<ApiNotification>).detail;
+      if (!incoming?.id) return;
+      setItems((prev) =>
+        prev.some((item) => item.id === incoming.id)
+          ? prev
+          : filter === "read" && !incoming.is_read
+            ? prev
+            : [incoming, ...prev],
+      );
+    };
+    window.addEventListener(NOTIFICATION_RECEIVED_EVENT, onReceived);
+    return () => {
+      window.removeEventListener(NOTIFICATION_RECEIVED_EVENT, onReceived);
     };
   }, [filter]);
 
