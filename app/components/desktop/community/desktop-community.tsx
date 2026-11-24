@@ -39,6 +39,7 @@ gsap.registerPlugin(ScrollTrigger);
 export default function DesktopCommunity() {
   const router = useRouter();
   const containerRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   const [communities, setCommunities] = useState<ApiCommunity[]>([]);
   const [loading, setLoading] = useState(true);
@@ -170,6 +171,13 @@ export default function DesktopCommunity() {
     router.push(`/community/${encodeURIComponent(community.slug || community.id)}`);
   }
 
+  function focusCommunitySearch() {
+    const input = searchInputRef.current;
+    if (!input) return;
+    input.scrollIntoView({ behavior: "smooth", block: "center" });
+    input.focus({ preventScroll: true });
+  }
+
   async function handleJoin(
     e: React.MouseEvent,
     community: ApiCommunity,
@@ -261,6 +269,7 @@ export default function DesktopCommunity() {
                 />
 
                 <Input
+                  ref={searchInputRef}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search fishing communities..."
@@ -448,7 +457,10 @@ export default function DesktopCommunity() {
         </section>
 
         <aside className="community-sidebar min-w-0">
-          <DesktopCommunityRightSidebar />
+          <DesktopCommunityRightSidebar
+            onCreateCommunity={() => setDialogOpen(true)}
+            onFocusSearch={focusCommunitySearch}
+          />
         </aside>
       </div>
 

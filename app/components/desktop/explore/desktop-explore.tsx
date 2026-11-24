@@ -1,30 +1,40 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import {
-  Search,
-  TrendingUp,
-  Heart,
-  MessageCircle,
-  MapPin,
+  Compass,
   Flame,
+  RefreshCw,
+  Search,
+  Sparkles,
+  X,
 } from "lucide-react";
-
-import Image from "next/image";
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
-import { explorePosts } from "@/app/utils/discovery-data";
 import DesktopSidebar from "../desktop-sidebar";
+import DesktopFishingPost from "../desktop-fishing-post";
+import ExploreSearchResults from "@/app/components/shared/explore/explore-search-results";
+import TrendingPosts from "@/app/components/shared/explore/trending-posts";
+import TrendingSearches from "@/app/components/shared/explore/trending-searches";
+import type { ExploreFeedState } from "@/app/components/shared/explore/use-explore-feed";
+import type { ExploreSearchState } from "@/app/components/shared/explore/use-explore-search";
+import type { ApiPost } from "@/lib/api/posts";
 
 gsap.registerPlugin(ScrollTrigger);
 
-export default function DesktopExplore() {
+interface DesktopExploreProps {
+  feed: ExploreFeedState;
+  search: ExploreSearchState;
+}
+
+export default function DesktopExplore({ feed, search }: DesktopExploreProps) {
+  const router = useRouter();
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -35,22 +45,21 @@ export default function DesktopExplore() {
         duration: 0.7,
         ease: "power3.out",
       });
-
-      gsap.from(".explore-card", {
-        y: 45,
-        opacity: 0,
-        duration: 0.7,
-        stagger: 0.12,
-        ease: "power3.out",
-        scrollTrigger: {
-          trigger: ".explore-feed",
-          start: "top 80%",
-        },
-      });
     }, containerRef);
 
     return () => ctx.revert();
   }, []);
+
+  function openPost(post: ApiPost) {
+    if (post.community_id) {
+      router.push(`/community/${encodeURIComponent(post.community_id)}`);
+      return;
+    }
+    router.push("/feed");
+  }
+
+  const showTypingHint =
+    search.query.trim().length > 0 && !search.isActive;
 
   return (
     <main ref={containerRef} className="min-h-screen bg-slate-50">
@@ -58,7 +67,8 @@ export default function DesktopExplore() {
         <aside className="border-r border-slate-200 bg-white">
           <DesktopSidebar />
         </aside>
-        <section className="col-start-2">
+
+        <section className="col-start-2 min-w-0">
           <header className="explore-header mb-7">
             <div className="flex items-center justify-between">
               <div>
@@ -71,13 +81,7 @@ export default function DesktopExplore() {
                 </h1>
               </div>
 
-              <Button
-                variant="outline"
-                size="icon"
-                className="rounded-full bg-white"
-              >
-                <Search size={19} />
-              </Button>
+              <Compass size={26} className="text-cyan-500" />
             </div>
 
             <div className="relative mt-5">
@@ -87,125 +91,150 @@ export default function DesktopExplore() {
               />
 
               <Input
-                placeholder="Search fishing posts, anglers..."
-                className="h-11 rounded-xl border-0 bg-white pl-10 shadow-sm"
+                value={search.query}
+                onChange={(event) => search.setQuery(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    search.runSearch(search.query);
+                    event.currentTarget.blur();
+                  }
+                }}
+                placeholder="Search anglers, posts, communities, spots..."
+                className="h-11 rounded-xl border-0 bg-white pl-10 pr-10 shadow-sm"
+                aria-label="Search Explore"
               />
+
+              {search.query.length > 0 && (
+                <button
+                  type="button"
+                  onClick={search.clear}
+                  aria-label="Clear search"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
+                >
+                  <X size={15} />
+                </button>
+              )}
             </div>
 
-            <div className="mt-5 flex gap-2">
-              <Button className="rounded-full bg-slate-900">For You</Button>
-
-              <Button variant="outline" className="rounded-full bg-white">
-                Trending
-              </Button>
-
-              <Button variant="outline" className="rounded-full bg-white">
-                Following
-              </Button>
-            </div>
+            <p className="mt-2 text-xs text-slate-400">
+              Search posts, anglers, communities, spots, places, species, gear,
+              events, and hashtags.
+            </p>
           </header>
 
-          {/* POSTS */}
-          <div className="explore-feed space-y-5">
-            {explorePosts.map((post) => (
-              <article
-                key={post.id}
-                className="explore-card overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
-              >
-                <div className="p-5">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Avatar>
-                        <AvatarFallback>{post.user.slice(0, 2)}</AvatarFallback>
-                      </Avatar>
-
-                      <div>
-                        <p className="text-sm font-bold">{post.user}</p>
-
-                        <p className="text-xs text-slate-400">
-                          {post.username} · {post.time}
-                        </p>
-                      </div>
-                    </div>
-
-                    <Badge className="rounded-full bg-orange-50 text-orange-600 hover:bg-orange-50">
-                      <Flame size={13} />
-                      Trending
-                    </Badge>
-                  </div>
-
-                  <p className="mt-4 text-sm leading-6 text-slate-700">
-                    {post.content}
+          {search.isActive ? (
+            <ExploreSearchResults
+              query={search.query.trim()}
+              results={search.results}
+              isSearching={search.isSearching}
+              error={search.error}
+              onRetry={search.retry}
+              onSelectHashtag={search.runSearch}
+            />
+          ) : showTypingHint ? (
+            <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-6 text-center text-xs text-slate-400">
+              Keep typing — search starts at two characters.
+            </div>
+          ) : (
+            <div className="space-y-5">
+              <div className="flex items-end justify-between gap-3">
+                <div>
+                  <p className="flex items-center gap-1.5 text-sm font-semibold text-cyan-600">
+                    <Sparkles size={15} />
+                    Recommended for you
                   </p>
+                  <h2 className="mt-1 text-2xl font-bold tracking-tight text-slate-900">
+                    Fresh catches worth a look
+                  </h2>
+                </div>
 
-                  <div className="mt-3 flex items-center gap-1 text-xs text-slate-400">
-                    <MapPin size={13} />
-                    {post.location}
+                {!feed.loading && feed.recommendedPosts.length > 0 && (
+                  <Badge
+                    variant="secondary"
+                    className="rounded-full bg-white text-slate-500 shadow-sm"
+                  >
+                    {feed.recommendedPosts.length} picks
+                  </Badge>
+                )}
+              </div>
+
+              {feed.loading && feed.recommendedPosts.length === 0 ? (
+                <div className="space-y-5">
+                  {Array.from({ length: 3 }).map((_, index) => (
+                    <div
+                      key={index}
+                      className="animate-pulse rounded-3xl border border-slate-200 bg-white p-5"
+                    >
+                      <div className="h-4 w-1/3 rounded bg-slate-200" />
+                      <div className="mt-3 h-3 w-full rounded bg-slate-100" />
+                      <div className="mt-2 aspect-[4/3] rounded-2xl bg-slate-100" />
+                    </div>
+                  ))}
+                </div>
+              ) : feed.error && feed.recommendedPosts.length === 0 ? (
+                <div className="rounded-3xl border border-red-200 bg-red-50 p-5 text-sm text-red-600">
+                  {feed.error}
+                  <div className="mt-3">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => void feed.reload()}
+                    >
+                      <RefreshCw size={14} />
+                      Try again
+                    </Button>
                   </div>
                 </div>
-
-                <div className="relative aspect-16/10 overflow-hidden">
-                  <Image
-                    src={post.image}
-                    alt={post.content}
-                    fill
-                    className="object-cover transition-transform duration-700 hover:scale-105"
+              ) : feed.recommendedPosts.length === 0 ? (
+                <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500">
+                  No recommended posts yet. Join a community or share your first
+                  catch.
+                </div>
+              ) : (
+                feed.recommendedPosts.map((post) => (
+                  <DesktopFishingPost
+                    key={post.id}
+                    post={post}
+                    currentUserId={feed.currentUserId}
                   />
-                </div>
-
-                <div className="flex items-center gap-2 p-4">
-                  <Button variant="ghost" className="rounded-xl text-slate-500">
-                    <Heart size={18} />
-                    {post.likes}
-                  </Button>
-
-                  <Button variant="ghost" className="rounded-xl text-slate-500">
-                    <MessageCircle size={18} />
-                    {post.comments}
-                  </Button>
-                </div>
-              </article>
-            ))}
-          </div>
+                ))
+              )}
+            </div>
+          )}
         </section>
 
-        {/* RIGHT */}
-        <aside className="col-start-3 space-y-5">
-          <div className="rounded-3xl bg-white p-5 shadow-sm">
-            <div className="flex items-center gap-2">
-              <TrendingUp size={19} className="text-cyan-500" />
+        <aside className="col-start-3">
+          <div className="sticky top-8 space-y-5">
+            <TrendingSearches
+              items={feed.trendingSearches}
+              onSelect={search.runSearch}
+            />
 
-              <h2 className="font-bold">Trending Fishing</h2>
-            </div>
+            <TrendingPosts
+              posts={feed.trendingPosts}
+              loading={feed.loading}
+              onOpenPost={openPost}
+            />
 
-            <div className="mt-5 space-y-4">
-              {[
-                "#casting",
-                "#mancingmania",
-                "#bassfishing",
-                "#freshwater",
-                "#fishingtrip",
-              ].map((tag, index) => (
-                <div key={tag}>
-                  <p className="text-sm font-semibold">{tag}</p>
+            <section className="rounded-3xl bg-gradient-to-br from-cyan-500 to-blue-600 p-5 text-white shadow-sm">
+              <Flame size={22} />
 
-                  <p className="text-xs text-slate-400">
-                    {12 - index * 2}.4K posts
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
+              <h3 className="mt-4 font-bold">Share your best catch</h3>
 
-          <div className="rounded-3xl bg-gradient-to-br from-cyan-500 to-blue-600 p-6 text-white">
-            <p className="text-sm opacity-80">Fishing tip</p>
+              <p className="mt-2 text-sm leading-6 text-cyan-50">
+                Post your latest trip and help fellow anglers discover new
+                spots, patterns, and techniques.
+              </p>
 
-            <h3 className="mt-2 text-xl font-bold">Share your best catch 🎣</h3>
-
-            <p className="mt-2 text-sm leading-5 opacity-80">
-              Bagikan pengalamanmu dan bantu pemancing lain menemukan spot
-              terbaik.
-            </p>
+              <Button
+                type="button"
+                onClick={() => router.push("/post")}
+                className="mt-4 w-full rounded-xl bg-white text-cyan-700 hover:bg-cyan-50"
+              >
+                Create a post
+              </Button>
+            </section>
           </div>
         </aside>
       </div>
