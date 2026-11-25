@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { Heart, Loader2, MessageCircle, Share2, X } from "lucide-react";
 
 import Image from "next/image";
@@ -34,12 +34,18 @@ import {
   recordPostShare,
 } from "@/lib/post-shares";
 import { getAvatarUrl } from "@/lib/api/media";
+import { requestBrowserNotificationPermission } from "@/lib/browser-notifications";
+import { takePendingCommentFocus } from "@/lib/notification-focus";
 
 interface PostActionsProps {
   post: ApiPost;
   currentUserId?: string | null;
   onPostUpdated?: (post: ApiPost) => void;
   compact?: boolean;
+  openComments?: boolean;
+  requestedCommentId?: string | null;
+  highlightRecentComment?: boolean;
+  allowAutoOpen?: boolean;
 }
 
 function interactionError(err: unknown, fallback: string): string {
@@ -57,13 +63,25 @@ function initials(name: string): string {
     .join("");
 }
 
+function mostRecentCommentId(items: ApiComment[]): string | null {
+  if (items.length === 0) return null;
+  return items.reduce((latest, item) => {
+    const itemTime = Date.parse(item.created_at);
+    const latestTime = Date.parse(latest.created_at);
+    if (!Number.isFinite(itemTime)) return latest;
+    return !Number.isFinite(latestTime) || itemTime > latestTime ? item : latest;
+  }).id;
+}
+
 function CommentItem({
   comment,
   nested,
+  highlighted = false,
   onReply,
 }: {
   comment: ApiComment;
   nested?: boolean;
+  highlighted?: boolean;
   onReply: (comment: ApiComment) => void;
 }) {
   const name =
@@ -78,7 +96,14 @@ function CommentItem({
           {initials(name)}
         </AvatarFallback>
       </Avatar>
-      <div className="min-w-0 flex-1 rounded-2xl bg-slate-50 px-3 py-2">
+      <div
+        id={`comment-${comment.id}`}
+        className={`min-w-0 flex-1 rounded-2xl px-3 py-2 transition-colors duration-150 ${
+          highlighted
+            ? "bg-blue-50 ring-2 ring-blue-400 shadow-md"
+            : "bg-slate-50"
+        }`}
+      >
         <div className="flex items-center gap-2">
           <p className="truncate text-xs font-semibold text-slate-900">{name}</p>
           {comment.created_at && (
@@ -230,6 +255,10 @@ export default function PostActions({
   currentUserId,
   onPostUpdated,
   compact = false,
+  openComments = false,
+  requestedCommentId = null,
+  highlightRecentComment = false,
+  allowAutoOpen = false,
 }: PostActionsProps) {
   const [override, setOverride] = useState<{
     key: string;
@@ -248,6 +277,10 @@ export default function PostActions({
   const [submittingComment, setSubmittingComment] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [highlightedCommentId, setHighlightedCommentId] = useState<
+    string | null
+  >(null);
+  const deepLinkLoadedRef = useRef<string | null>(null);
 
   const propKey = `${post.like_count ?? 0}|${post.is_liked ? "1" : "0"}|${
     post.comment_count ?? 0
@@ -296,6 +329,7 @@ export default function PostActions({
     applyPatch({ is_liked: nextLiked, like_count: nextCount });
     setActionError(null);
     emitUpdate({ is_liked: nextLiked, like_count: nextCount });
+    if (nextLiked) void requestBrowserNotificationPermission();
 
     try {
       const status = nextLiked
@@ -321,29 +355,94 @@ export default function PostActions({
     }
   }
 
-  async function loadComments(cursor?: string | null, append = false) {
-    setCommentsLoading(true);
-    setCommentsError(null);
-    try {
-      const result = await listComments(post.id, { limit: 20, cursor });
-      setComments((prev) =>
-        append
-          ? [
-              ...prev,
-              ...result.items.filter(
-                (item) => !prev.some((existing) => existing.id === item.id),
-              ),
-            ]
-          : result.items,
-      );
-      setNextCursor(result.nextCursor);
-      setHasMoreComments(result.hasMore);
-    } catch (err) {
-      setCommentsError(interactionError(err, "Could not load comments"));
-    } finally {
-      setCommentsLoading(false);
-    }
-  }
+  const loadComments = useCallback(
+    async (
+      cursor?: string | null,
+      append = false,
+      focus?: { commentId: string | null; highlight: boolean } | null,
+    ) => {
+      setCommentsLoading(true);
+      setCommentsError(null);
+      try {
+        const result = await listComments(post.id, { limit: 20, cursor });
+        setComments((prev) =>
+          append
+            ? [
+                ...prev,
+                ...result.items.filter(
+                  (item) => !prev.some((existing) => existing.id === item.id),
+                ),
+              ]
+            : result.items,
+        );
+        setNextCursor(result.nextCursor);
+        setHasMoreComments(result.hasMore);
+        const shouldHighlight = focus?.highlight ?? highlightRecentComment;
+        if (!append && (openComments || focus) && shouldHighlight) {
+          const preferred = focus?.commentId ?? requestedCommentId;
+          const requested =
+            preferred && result.items.some((item) => item.id === preferred)
+              ? preferred
+              : null;
+          setHighlightedCommentId(requested ?? mostRecentCommentId(result.items));
+        }
+      } catch (err) {
+        setCommentsError(interactionError(err, "Could not load comments"));
+      } finally {
+        setCommentsLoading(false);
+      }
+    },
+    [post.id, openComments, requestedCommentId, highlightRecentComment],
+  );
+
+  const openCommentsFor = useCallback(
+    (focus?: { commentId: string | null; highlight: boolean } | null) => {
+      if (deepLinkLoadedRef.current === post.id) return;
+      deepLinkLoadedRef.current = post.id;
+      setCommentsOpen(true);
+      setReplyTo(null);
+      setCommentText("");
+      setComments([]);
+      setNextCursor(null);
+      setHasMoreComments(false);
+      setCommentsError(null);
+      void loadComments(null, false, focus);
+    },
+    [post.id, loadComments],
+  );
+
+  useEffect(() => {
+    if (!allowAutoOpen || !openComments) return;
+    openCommentsFor({
+      commentId: requestedCommentId,
+      highlight: highlightRecentComment,
+    });
+  }, [
+    allowAutoOpen,
+    openComments,
+    openCommentsFor,
+    requestedCommentId,
+    highlightRecentComment,
+  ]);
+
+  useEffect(() => {
+    if (!allowAutoOpen) return;
+    const pending = takePendingCommentFocus(post.id);
+    if (!pending) return;
+    openCommentsFor({
+      commentId: pending.commentId,
+      highlight: pending.highlight,
+    });
+  }, [allowAutoOpen, post.id, openCommentsFor]);
+
+  useEffect(() => {
+    if (!highlightedCommentId) return;
+    document
+      .getElementById(`comment-${highlightedCommentId}`)
+      ?.scrollIntoView({ block: "nearest" });
+    const timer = window.setTimeout(() => setHighlightedCommentId(null), 1000);
+    return () => window.clearTimeout(timer);
+  }, [highlightedCommentId]);
 
   function handleOpenComments() {
     setCommentsOpen(true);
@@ -365,6 +464,7 @@ export default function PostActions({
     setActionError(null);
     try {
       const created = await createComment(post.id, content, replyTo?.id ?? null);
+      void requestBrowserNotificationPermission();
       setComments((prev) =>
         prev.some((item) => item.id === created.id) ? prev : [...prev, created],
       );
@@ -572,12 +672,17 @@ export default function PostActions({
 
                 {rootComments.map((comment) => (
                   <div key={comment.id} className="space-y-2">
-                    <CommentItem comment={comment} onReply={setReplyTo} />
+                    <CommentItem
+                      comment={comment}
+                      highlighted={highlightedCommentId === comment.id}
+                      onReply={setReplyTo}
+                    />
                     {(repliesByParent.get(comment.id) ?? []).map((reply) => (
                       <CommentItem
                         key={reply.id}
                         comment={reply}
                         nested
+                        highlighted={highlightedCommentId === reply.id}
                         onReply={setReplyTo}
                       />
                     ))}

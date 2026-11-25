@@ -433,6 +433,22 @@ export async function createComment(
   return comment;
 }
 
+export async function getCommentPostId(commentId: string): Promise<string | null> {
+  try {
+    const res = await apiFetch<unknown>(
+      `/comments/${encodeURIComponent(commentId)}`,
+      { method: "GET" },
+    );
+    const envelope = asRecord(res);
+    const data = asRecord(envelope?.data) ?? envelope;
+    const comment = asRecord(data?.comment) ?? data;
+    const postId = comment?.post_id ?? comment?.postId ?? data?.post_id;
+    return typeof postId === "string" && postId ? postId : null;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * GET /api/v1/feed (alias /api/v1/posts/feed) — chronological social feed.
  */

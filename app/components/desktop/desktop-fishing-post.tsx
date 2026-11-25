@@ -32,6 +32,10 @@ interface DesktopFishingPostProps {
   /** Viewer id — Edit option only shows when it matches the post author. */
   currentUserId?: string | null;
   onPostUpdated?: (post: ApiPost) => void;
+  focusComments?: boolean;
+  requestedCommentId?: string | null;
+  highlightRecentComment?: boolean;
+  allowAutoOpen?: boolean;
 }
 
 function initials(name: string): string {
@@ -47,6 +51,10 @@ export default function DesktopFishingPost({
   post,
   currentUserId,
   onPostUpdated,
+  focusComments = false,
+  requestedCommentId = null,
+  highlightRecentComment = false,
+  allowAutoOpen = false,
 }: DesktopFishingPostProps) {
   const [editOpen, setEditOpen] = useState(false);
   const isOwner = Boolean(currentUserId) && currentUserId === post.author_id;
@@ -177,6 +185,10 @@ export default function DesktopFishingPost({
             post={post}
             currentUserId={currentUserId}
             onPostUpdated={onPostUpdated}
+            openComments={focusComments}
+            requestedCommentId={requestedCommentId}
+            highlightRecentComment={highlightRecentComment}
+            allowAutoOpen={allowAutoOpen}
           />
 
           <Button

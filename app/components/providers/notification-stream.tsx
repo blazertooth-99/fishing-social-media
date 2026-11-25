@@ -1,14 +1,22 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Heart, MessageCircle, X } from "lucide-react";
 
 import { API_BASE_URL } from "@/lib/api/client";
 import {
   broadcastNotificationReceived,
   broadcastNotificationsRead,
+  getNotificationHref,
   type ApiNotification,
 } from "@/lib/api/notifications";
+import {
+  getBrowserNotificationPermission,
+  requestBrowserNotificationPermission,
+  showBrowserNotification,
+  type BrowserNotificationPermission,
+} from "@/lib/browser-notifications";
 import { describeNotificationEvent } from "@/app/components/shared/notifications/notification-widgets";
 import { useAuth } from "@/app/components/providers/auth-provider";
 
@@ -33,6 +41,7 @@ function parseNotification(raw: string): ApiNotification | null {
     const hasActor = Boolean(actor?.id);
 
     return {
+      ...data,
       id,
       recipient_id:
         typeof data.recipient_id === "string" ? data.recipient_id : "",
@@ -85,8 +94,11 @@ export default function NotificationStream({
 }: {
   children: React.ReactNode;
 }) {
+  const router = useRouter();
   const { session } = useAuth();
   const [toast, setToast] = useState<ApiNotification | null>(null);
+  const [permission, setPermission] =
+    useState<BrowserNotificationPermission>(getBrowserNotificationPermission);
 
   useEffect(() => {
     if (!session?.user_id || typeof window === "undefined") return;
@@ -103,6 +115,20 @@ export default function NotificationStream({
       broadcastNotificationReceived(notification);
       broadcastNotificationsRead();
       setToast(notification);
+
+      const eventType = notification.event_type.toUpperCase();
+      if (eventType === "LIKE" || eventType === "COMMENT") {
+        const actorName =
+          notification.actor?.display_name ||
+          notification.actor?.username ||
+          "Someone";
+        showBrowserNotification({
+          title: actorName,
+          body: describeNotificationEvent(notification.event_type),
+          href: getNotificationHref(notification),
+          tag: `fishconnect-${notification.id}`,
+        });
+      }
     };
 
     source.addEventListener("notification", onNotification);
@@ -132,14 +158,34 @@ export default function NotificationStream({
         >
           <ToastIcon eventType={toast.event_type} />
           <div className="min-w-0 flex-1 pt-0.5">
-            <p className="text-xs leading-5 text-slate-700">
-              <span className="font-semibold text-slate-900">
-                {toast.actor?.display_name ||
-                  toast.actor?.username ||
-                  "Someone"}
-              </span>{" "}
-              {describeNotificationEvent(toast.event_type)}
-            </p>
+            <button
+              type="button"
+              onClick={() => {
+                router.push(getNotificationHref(toast));
+                setToast(null);
+              }}
+              className="block w-full text-left"
+            >
+              <p className="text-xs leading-5 text-slate-700">
+                <span className="font-semibold text-slate-900">
+                  {toast.actor?.display_name ||
+                    toast.actor?.username ||
+                    "Someone"}
+                </span>{" "}
+                {describeNotificationEvent(toast.event_type)}
+              </p>
+            </button>
+            {permission === "default" && (
+              <button
+                type="button"
+                onClick={() =>
+                  void requestBrowserNotificationPermission().then(setPermission)
+                }
+                className="mt-1 text-[11px] font-semibold text-emerald-600 hover:text-emerald-700"
+              >
+                Enable browser notifications
+              </button>
+            )}
           </div>
           <button
             type="button"

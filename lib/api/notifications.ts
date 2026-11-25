@@ -103,6 +103,41 @@ export async function markAllNotificationsAsRead(): Promise<number> {
   return res.data?.marked_count ?? 0;
 }
 
+export function getNotificationPostId(
+  notification: ApiNotification,
+): string | null {
+  const extra = notification as Record<string, unknown>;
+  for (const key of [
+    "post_id",
+    "postId",
+    "entity_post_id",
+    "target_post_id",
+  ]) {
+    const value = extra[key];
+    if (typeof value === "string" && value) return value;
+  }
+  const eventType = notification.event_type.toUpperCase();
+  if (eventType !== "LIKE" && eventType !== "COMMENT") return null;
+  return notification.entity_id || null;
+}
+
+export function getNotificationHref(notification: ApiNotification): string {
+  const base = `/notifications/${encodeURIComponent(notification.id)}`;
+  const params = new URLSearchParams();
+  const postId = getNotificationPostId(notification);
+  if (postId) params.set("post", postId);
+
+  if (notification.event_type.toUpperCase() === "COMMENT") {
+    if (notification.entity_id) {
+      params.set("comment", notification.entity_id);
+    }
+    params.set("highlight", "1");
+  }
+
+  const query = params.toString();
+  return query ? `${base}?${query}` : base;
+}
+
 /** Event name broadcast when the unread count may have changed. */
 export const NOTIFICATIONS_READ_EVENT = "fishconnect:notifications-read";
 

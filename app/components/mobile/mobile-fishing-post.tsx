@@ -30,6 +30,10 @@ interface MobileFishingPostProps {
   /** Viewer id — Edit option only shows when it matches the post author. */
   currentUserId?: string | null;
   onPostUpdated?: (post: ApiPost) => void;
+  focusComments?: boolean;
+  requestedCommentId?: string | null;
+  highlightRecentComment?: boolean;
+  allowAutoOpen?: boolean;
 }
 
 function initials(name: string): string {
@@ -45,6 +49,10 @@ export default function MobileFishingPost({
   post,
   currentUserId,
   onPostUpdated,
+  focusComments = false,
+  requestedCommentId = null,
+  highlightRecentComment = false,
+  allowAutoOpen = false,
 }: MobileFishingPostProps) {
   const [editOpen, setEditOpen] = useState(false);
   const isOwner = Boolean(currentUserId) && currentUserId === post.author_id;
@@ -143,12 +151,16 @@ export default function MobileFishingPost({
 
       {/* ACTION */}
       <div className="flex items-center justify-between px-2 py-2">
-        <PostActions
-          post={post}
-          currentUserId={currentUserId}
-          onPostUpdated={onPostUpdated}
-          compact
-        />
+          <PostActions
+            post={post}
+            currentUserId={currentUserId}
+            onPostUpdated={onPostUpdated}
+            openComments={focusComments}
+            requestedCommentId={requestedCommentId}
+            highlightRecentComment={highlightRecentComment}
+            allowAutoOpen={allowAutoOpen}
+            compact
+          />
 
         {locationLabel && (
           <span className="truncate pl-2 text-[10px] text-slate-400">

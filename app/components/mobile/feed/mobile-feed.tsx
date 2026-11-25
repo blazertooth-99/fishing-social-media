@@ -7,7 +7,12 @@ import MobileBottomNav from "../mobile-bottom-nav";
 import MobileFishingPost from "../mobile-fishing-post";
 import CreatePost from "@/app/components/shared/post/create-post";
 
-import { extractApiErrorMessage, getFeed, type ApiPost } from "@/lib/api/posts";
+import {
+  extractApiErrorMessage,
+  getFeed,
+  getPostById,
+  type ApiPost,
+} from "@/lib/api/posts";
 import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { useJoinedCommunities } from "@/app/components/shared/community/use-joined-communities";
@@ -15,7 +20,17 @@ import { useRouter } from "next/navigation";
 
 const PAGE_LIMIT = 20;
 
-export default function MobileLayout() {
+export default function MobileLayout({
+  focusedPostId = null,
+  requestedCommentId = null,
+  highlightRecentComment = false,
+  allowAutoOpen = false,
+}: {
+  focusedPostId?: string | null;
+  requestedCommentId?: string | null;
+  highlightRecentComment?: boolean;
+  allowAutoOpen?: boolean;
+}) {
   const router = useRouter();
   const {
     communities: joinedCommunities,
@@ -43,7 +58,12 @@ export default function MobileLayout() {
         limit: PAGE_LIMIT,
         cursor: cursor ?? undefined,
       });
-      setPosts((prev) => (append ? [...prev, ...items] : items));
+      let visibleItems = items;
+      if (focusedPostId && !append && !items.some((p) => p.id === focusedPostId)) {
+        const focused = await getPostById(focusedPostId).catch(() => null);
+        if (focused) visibleItems = [focused, ...items];
+      }
+      setPosts((prev) => (append ? [...prev, ...visibleItems] : visibleItems));
       setNextCursor(pagination?.next_cursor ?? null);
       setHasMore(pagination?.has_more === true && Boolean(pagination?.next_cursor));
     } catch (err) {
@@ -52,7 +72,7 @@ export default function MobileLayout() {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, []);
+  }, [focusedPostId]);
 
   useEffect(() => {
     async function init() {
@@ -64,6 +84,13 @@ export default function MobileLayout() {
 
     init();
   }, [loadFeed]);
+
+  useEffect(() => {
+    if (!focusedPostId || loading) return;
+    document
+      .getElementById(`post-${focusedPostId}`)
+      ?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [focusedPostId, loading]);
 
   // Fresh post (already re-fetched via GET /api/v1/posts/{id}) goes on top.
   function handlePostCreated(post: ApiPost) {
@@ -193,14 +220,19 @@ export default function MobileLayout() {
           {/* Feed list — each item is a full PostResponse (GET /api/v1/posts/{id} shape) */}
           {!loading &&
             !error &&
-            posts.map((post) => (
-              <MobileFishingPost
-                key={post.id}
-                post={post}
-                currentUserId={currentUserId}
-                onPostUpdated={handlePostUpdated}
-              />
-            ))}
+              posts.map((post) => (
+                <div key={post.id} id={`post-${post.id}`}>
+                  <MobileFishingPost
+                    post={post}
+                    currentUserId={currentUserId}
+                    onPostUpdated={handlePostUpdated}
+                    focusComments={allowAutoOpen && post.id === focusedPostId}
+                    requestedCommentId={requestedCommentId}
+                    highlightRecentComment={highlightRecentComment}
+                    allowAutoOpen={allowAutoOpen}
+                  />
+                </div>
+              ))}
 
           {!loading && !error && hasMore && (
             <div className="flex justify-center pt-2">

@@ -12,7 +12,11 @@ import {
 } from "lucide-react";
 
 import { formatRelativeTime } from "@/lib/api/posts";
-import type { ApiNotification } from "@/lib/api/notifications";
+import {
+  getNotificationHref,
+  getNotificationPostId,
+  type ApiNotification,
+} from "@/lib/api/notifications";
 
 /** Human-readable action for a notification event type. */
 export function describeNotificationEvent(eventType: string): string {
@@ -108,8 +112,15 @@ export function NotificationRow({
 
   function handleClick() {
     onMarkAsRead(notification.id);
-    // Deep-link ke profil publik actor — mencakup case FOLLOW
-    // (follower baru) maupun event lain yang membawa actor.
+    const eventType = notification.event_type.toUpperCase();
+    if (
+      (eventType === "LIKE" || eventType === "COMMENT") &&
+      getNotificationPostId(notification)
+    ) {
+      router.push(getNotificationHref(notification));
+      return;
+    }
+    // Other events (e.g. FOLLOW) still deep-link to the actor's profile.
     if (actorUsername) {
       router.push(`/users/${encodeURIComponent(actorUsername)}`);
     }

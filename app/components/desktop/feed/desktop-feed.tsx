@@ -9,12 +9,27 @@ import DesktopFishingPost from "../desktop-fishing-post";
 import CreatePost from "@/app/components/shared/post/create-post";
 
 import { api } from "@/lib/api";
-import { extractApiErrorMessage, getFeed, type ApiPost } from "@/lib/api/posts";
+import {
+  extractApiErrorMessage,
+  getFeed,
+  getPostById,
+  type ApiPost,
+} from "@/lib/api/posts";
 import { Button } from "@/components/ui/button";
 
 const PAGE_LIMIT = 20;
 
-export default function DesktopLayout() {
+export default function DesktopLayout({
+  focusedPostId = null,
+  requestedCommentId = null,
+  highlightRecentComment = false,
+  allowAutoOpen = false,
+}: {
+  focusedPostId?: string | null;
+  requestedCommentId?: string | null;
+  highlightRecentComment?: boolean;
+  allowAutoOpen?: boolean;
+}) {
   const router = useRouter();
   const [posts, setPosts] = useState<ApiPost[]>([]);
   const [loading, setLoading] = useState(true);
@@ -37,7 +52,12 @@ export default function DesktopLayout() {
           limit: PAGE_LIMIT,
           cursor: cursor ?? undefined,
         });
-        setPosts((prev) => (append ? [...prev, ...items] : items));
+        let visibleItems = items;
+        if (focusedPostId && !append && !items.some((p) => p.id === focusedPostId)) {
+          const focused = await getPostById(focusedPostId).catch(() => null);
+          if (focused) visibleItems = [focused, ...items];
+        }
+        setPosts((prev) => (append ? [...prev, ...visibleItems] : visibleItems));
         setNextCursor(pagination?.next_cursor ?? null);
         setHasMore(pagination?.has_more === true && Boolean(pagination?.next_cursor));
       } catch (err) {
@@ -52,7 +72,7 @@ export default function DesktopLayout() {
         setLoadingMore(false);
       }
     },
-    [router],
+    [router, focusedPostId],
   );
 
   useEffect(() => {
@@ -68,6 +88,13 @@ export default function DesktopLayout() {
 
     check();
   }, [router, loadFeed]);
+
+  useEffect(() => {
+    if (!focusedPostId || loading) return;
+    document
+      .getElementById(`post-${focusedPostId}`)
+      ?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [focusedPostId, loading]);
 
   // Fresh post (already re-fetched via GET /api/v1/posts/{id}) goes on top.
   function handlePostCreated(post: ApiPost) {
@@ -143,12 +170,17 @@ export default function DesktopLayout() {
               {!loading &&
                 !error &&
                 posts.map((post) => (
-                  <DesktopFishingPost
-                    key={post.id}
-                    post={post}
-                    currentUserId={currentUserId}
-                    onPostUpdated={handlePostUpdated}
-                  />
+                  <div key={post.id} id={`post-${post.id}`}>
+                    <DesktopFishingPost
+                      post={post}
+                      currentUserId={currentUserId}
+                      onPostUpdated={handlePostUpdated}
+                      focusComments={allowAutoOpen && post.id === focusedPostId}
+                      requestedCommentId={requestedCommentId}
+                      highlightRecentComment={highlightRecentComment}
+                      allowAutoOpen={allowAutoOpen}
+                    />
+                  </div>
                 ))}
 
               {!loading && !error && hasMore && (
