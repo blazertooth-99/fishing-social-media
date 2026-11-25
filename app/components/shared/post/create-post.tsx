@@ -4,12 +4,13 @@ import { useRef, useState } from "react";
 import Image from "next/image";
 import { ImagePlus, Loader2, MapPin, Send, X } from "lucide-react";
 
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
+import { useViewerProfile } from "@/app/components/shared/profile/use-viewer-profile";
 import { resolveMediaId, uploadMedia } from "@/lib/api/media";
 import {
   buildCreatePostPayload,
@@ -34,8 +35,18 @@ interface PendingPhoto {
 const MAX_PHOTOS = 10;
 const MAX_FILE_BYTES = 15 * 1024 * 1024;
 
+function initials(name: string): string {
+  return name
+    .split(/[\s_-]+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("");
+}
+
 export default function CreatePost({ onPostCreated }: CreatePostProps) {
   const fileRef = useRef<HTMLInputElement>(null);
+  const { displayName, avatarUrl } = useViewerProfile();
 
   const [expanded, setExpanded] = useState(false);
   const [content, setContent] = useState("");
@@ -181,7 +192,10 @@ export default function CreatePost({ onPostCreated }: CreatePostProps) {
       <div className="p-4 sm:p-5">
         <div className="flex gap-3">
           <Avatar className="h-11 w-11 shrink-0">
-            <AvatarFallback className="text-thover">CS</AvatarFallback>
+            {avatarUrl && <AvatarImage src={avatarUrl} alt={displayName} />}
+            <AvatarFallback className="text-thover">
+              {initials(displayName)}
+            </AvatarFallback>
           </Avatar>
 
           <div className="min-w-0 flex-1">

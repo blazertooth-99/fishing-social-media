@@ -5,7 +5,7 @@ import { Bookmark, MapPin, MoreHorizontal, Pencil } from "lucide-react";
 
 import Image from "next/image";
 
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -25,6 +25,7 @@ import {
   resolveMediaUrl,
   type ApiPost,
 } from "@/lib/api/posts";
+import { getAvatarUrl } from "@/lib/api/media";
 
 interface DesktopFishingPostProps {
   post: ApiPost;
@@ -49,6 +50,8 @@ export default function DesktopFishingPost({
 }: DesktopFishingPostProps) {
   const [editOpen, setEditOpen] = useState(false);
   const isOwner = Boolean(currentUserId) && currentUserId === post.author_id;
+  const authorName = post.author_display_name || post.author_username;
+  const avatarUrl = getAvatarUrl(post.author_avatar_media_id);
   const cover = post.media?.[0]
     ? resolveMediaUrl(post.media[0].display_url || post.media[0].thumbnail_url)
     : null;
@@ -64,8 +67,9 @@ export default function DesktopFishingPost({
       <div className="flex items-center justify-between p-5 pb-3">
         <div className="flex items-center gap-3">
           <Avatar className="h-11 w-11 ring-2 ring-emerald-50">
+            {avatarUrl && <AvatarImage src={avatarUrl} alt={authorName} />}
             <AvatarFallback className="bg-gradient-to-br from-emerald-500 to-cyan-500 text-white">
-              {initials(post.author_display_name || post.author_username)}
+              {initials(authorName)}
             </AvatarFallback>
           </Avatar>
 

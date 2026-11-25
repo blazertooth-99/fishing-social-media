@@ -13,12 +13,13 @@ import {
   Settings2,
 } from "lucide-react";
 
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 
 import PostFishingDetails from "@/app/components/shared/post/post-fishing-details";
 import PostMediaPicker from "@/app/components/shared/post/post-media-picker";
+import { useViewerProfile } from "@/app/components/shared/profile/use-viewer-profile";
 import { useRouter } from "next/navigation";
 
 export interface MobilePostProps {
@@ -26,8 +27,18 @@ export interface MobilePostProps {
   onSubmit?: () => void;
 }
 
+function initials(name: string): string {
+  return name
+    .split(/[\s_-]+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("");
+}
+
 export default function MobilePost({ onClose, onSubmit }: MobilePostProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const { displayName, avatarUrl } = useViewerProfile();
   const router = useRouter();
 
   useLayoutEffect(() => {
@@ -128,8 +139,9 @@ export default function MobilePost({ onClose, onSubmit }: MobilePostProps) {
           {/* Avatar */}
 
           <Avatar className="h-10 w-10 shrink-0">
+            {avatarUrl && <AvatarImage src={avatarUrl} alt={displayName} />}
             <AvatarFallback className="bg-emerald-600 text-sm font-semibold text-white">
-              CS
+              {initials(displayName)}
             </AvatarFallback>
           </Avatar>
 
@@ -137,7 +149,7 @@ export default function MobilePost({ onClose, onSubmit }: MobilePostProps) {
 
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5">
-              <span className="text-sm font-semibold">csatrio</span>
+              <span className="text-sm font-semibold">{displayName}</span>
 
               <span className="text-xs text-slate-300">›</span>
 

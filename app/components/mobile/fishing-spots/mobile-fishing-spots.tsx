@@ -12,7 +12,7 @@ import {
   Star,
 } from "lucide-react";
 
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -23,6 +23,7 @@ import {
   formatSpotRating,
 } from "@/lib/api/fishing-spots";
 import { useFishingSpots } from "@/app/components/shared/use-fishing-spots";
+import { useViewerProfile } from "@/app/components/shared/profile/use-viewer-profile";
 import CreateFishingSpotDialog from "@/app/components/shared/create-fishing-spot-dialog";
 
 const filters = [
@@ -37,6 +38,7 @@ type Filter = (typeof filters)[number];
 
 export default function MobileFishingSpot() {
   const containerRef = useRef<HTMLDivElement>(null);
+  const { displayName, avatarUrl } = useViewerProfile();
 
   const [activeFilter, setActiveFilter] = useState<Filter>("Nearby");
   const { spots, query, setQuery, isLoading, error, reload, prependSpot } =
@@ -126,8 +128,9 @@ export default function MobileFishingSpot() {
           </Button>
 
           <Avatar className="h-9 w-9">
+            {avatarUrl && <AvatarImage src={avatarUrl} alt={displayName} />}
             <AvatarFallback className="bg-emerald-600 text-xs font-semibold text-white">
-              CS
+              {displayName.slice(0, 2).toUpperCase()}
             </AvatarFallback>
           </Avatar>
         </div>

@@ -3,7 +3,10 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Heart, Loader2, MessageCircle, Share2, X } from "lucide-react";
 
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import Image from "next/image";
+
+import CommunityTag from "@/app/components/shared/post/community-tag";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -20,6 +23,7 @@ import {
   formatRelativeTime,
   likePost,
   listComments,
+  resolveMediaUrl,
   unlikePost,
   type ApiComment,
   type ApiPost,
@@ -29,6 +33,7 @@ import {
   POST_SHARE_EVENT,
   recordPostShare,
 } from "@/lib/post-shares";
+import { getAvatarUrl } from "@/lib/api/media";
 
 interface PostActionsProps {
   post: ApiPost;
@@ -63,10 +68,12 @@ function CommentItem({
 }) {
   const name =
     comment.author_display_name || comment.author_username || "Angler";
+  const avatarUrl = getAvatarUrl(comment.author_avatar_media_id ?? null);
 
   return (
     <div className={`flex gap-2.5 ${nested ? "ml-8" : ""}`}>
       <Avatar className="h-8 w-8 shrink-0">
+        {avatarUrl && <AvatarImage src={avatarUrl} alt={name} />}
         <AvatarFallback className="bg-emerald-100 text-[10px] font-bold text-emerald-700">
           {initials(name)}
         </AvatarFallback>
@@ -93,6 +100,127 @@ function CommentItem({
           </button>
         )}
       </div>
+    </div>
+  );
+}
+
+function PostPreview({
+  post,
+  likeCount,
+  commentCount,
+  shareCount,
+  liked,
+  liking,
+  onLike,
+  onShare,
+}: {
+  post: ApiPost;
+  likeCount: number;
+  commentCount: number;
+  shareCount: number;
+  liked: boolean;
+  liking: boolean;
+  onLike: () => void;
+  onShare: () => void;
+}) {
+  const name = post.author_display_name || post.author_username || "Angler";
+  const avatarUrl = getAvatarUrl(post.author_avatar_media_id);
+  const cover = post.media?.[0]
+    ? resolveMediaUrl(
+        post.media[0].display_url || post.media[0].thumbnail_url,
+      )
+    : null;
+  const locationLabel = !post.location
+    ? null
+    : post.location.privacy === "PRIVATE"
+      ? "Private location"
+      : (post.location.name ?? "Shared location");
+
+  return (
+    <div className="flex flex-col">
+      <div className="flex items-start gap-3 p-4">
+        <Avatar className="h-10 w-10 shrink-0 ring-2 ring-emerald-50">
+          {avatarUrl && <AvatarImage src={avatarUrl} alt={name} />}
+          <AvatarFallback className="bg-gradient-to-br from-emerald-500 to-cyan-500 text-xs text-white">
+            {initials(name)}
+          </AvatarFallback>
+        </Avatar>
+        <div className="min-w-0">
+          <p className="truncate text-sm font-bold text-slate-900">{name}</p>
+          <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-slate-400">
+            <span className="truncate">@{post.author_username}</span>
+            <span>·</span>
+            <span>{formatRelativeTime(post.created_at)}</span>
+          </div>
+          {post.community_id && (
+            <div className="mt-1.5">
+              <CommunityTag communityId={post.community_id} />
+            </div>
+          )}
+        </div>
+      </div>
+
+      {post.content && (
+        <p className="whitespace-pre-wrap break-words px-4 pb-3 text-sm leading-6 text-slate-700">
+          {post.content}
+        </p>
+      )}
+
+      {cover && (
+        <div className="relative aspect-[4/3] w-full overflow-hidden bg-slate-200">
+          <Image
+            src={cover}
+            alt={`Catch by ${name}`}
+            fill
+            loading="eager"
+            sizes="(max-width: 768px) 95vw, 600px"
+            className="object-cover"
+            unoptimized
+          />
+        </div>
+      )}
+
+      <div className="flex items-center gap-1 border-t border-slate-100 px-3 py-2">
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={onLike}
+          disabled={liking}
+          aria-pressed={liked}
+          className={`gap-1.5 rounded-xl text-xs ${
+            liked ? "text-red-500" : "text-slate-500 hover:text-red-500"
+          }`}
+        >
+          {liking ? (
+            <Loader2 size={15} className="animate-spin" />
+          ) : (
+            <Heart size={15} fill={liked ? "currentColor" : "none"} />
+          )}
+          Like{likeCount > 0 ? ` · ${likeCount}` : ""}
+        </Button>
+
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={onShare}
+          className="gap-1.5 rounded-xl text-xs text-slate-500"
+        >
+          <Share2 size={15} />
+          Share{shareCount > 0 ? ` · ${shareCount}` : ""}
+        </Button>
+
+        <span className="ml-auto flex items-center gap-1.5 px-2 text-[11px] font-medium text-slate-500">
+          <MessageCircle size={14} /> {commentCount}
+        </span>
+      </div>
+
+      {locationLabel && (
+        <div className="flex items-center gap-1 px-4 pb-3 text-[11px] text-emerald-600">
+          <span className="truncate">📍 {locationLabel}</span>
+        </div>
+      )}
     </div>
   );
 }
@@ -374,108 +502,147 @@ export default function PostActions({
       )}
 
       <Dialog open={commentsOpen} onOpenChange={setCommentsOpen}>
-        <DialogContent className="max-h-[85vh] max-w-lg overflow-hidden rounded-3xl">
-          <DialogHeader>
-            <DialogTitle>Comments</DialogTitle>
-            <DialogDescription>
-              {commentCount} {commentCount === 1 ? "comment" : "comments"} on this
-              post
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="max-h-[45vh] space-y-3 overflow-y-auto pr-1">
-            {commentsLoading && comments.length === 0 && (
-              <p className="py-4 text-center text-xs text-slate-400">
-                Loading comments…
-              </p>
-            )}
-
-            {commentsError && (
-              <div className="space-y-2 rounded-2xl bg-red-50 px-3 py-2 text-xs text-red-600">
-                <p>{commentsError}</p>
-                <button
-                  type="button"
-                  onClick={() => void loadComments(null, false)}
-                  className="font-semibold underline"
-                >
-                  Retry
-                </button>
-              </div>
-            )}
-
-            {!commentsLoading && !commentsError && comments.length === 0 && (
-              <p className="py-4 text-center text-xs text-slate-400">
-                No comments yet. Be the first to comment.
-              </p>
-            )}
-
-            {rootComments.map((comment) => (
-              <div key={comment.id} className="space-y-2">
-                <CommentItem comment={comment} onReply={setReplyTo} />
-                {(repliesByParent.get(comment.id) ?? []).map((reply) => (
-                  <CommentItem
-                    key={reply.id}
-                    comment={reply}
-                    nested
-                    onReply={setReplyTo}
-                  />
-                ))}
-              </div>
-            ))}
-
-            {hasMoreComments && (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => void loadComments(nextCursor, true)}
-                disabled={commentsLoading}
-                className="w-full rounded-full text-xs"
-              >
-                {commentsLoading ? "Loading…" : "Load more comments"}
-              </Button>
-            )}
-          </div>
-
-          <form onSubmit={handleSubmitComment} className="space-y-2 border-t pt-3">
-            {replyTo && (
-              <div className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2 text-[11px] text-slate-500">
-                <span>
-                  Replying to{" "}
-                  <strong className="text-slate-800">
-                    {replyTo.author_display_name || replyTo.author_username}
-                  </strong>
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setReplyTo(null)}
-                  aria-label="Cancel reply"
-                >
-                  <X size={14} />
-                </button>
-              </div>
-            )}
-            <Textarea
-              value={commentText}
-              onChange={(event) => setCommentText(event.target.value)}
-              maxLength={1000}
-              rows={2}
-              placeholder="Write a comment…"
-              className="resize-none rounded-2xl text-sm"
-            />
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-[11px] text-slate-400">
-                {currentUserId ? "" : "Log in to comment"}
-              </span>
-              <Button
-                type="submit"
-                disabled={submittingComment || commentText.trim().length === 0}
-                className="gap-2 rounded-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60"
-              >
-                {submittingComment && <Loader2 size={14} className="animate-spin" />}
-                Comment
-              </Button>
+        <DialogContent className="w-[95vw] max-w-2xl overflow-hidden rounded-3xl p-0">
+          <div className="flex max-h-[90vh] flex-col">
+            <div className="min-h-0 max-h-[45vh] shrink-0 overflow-y-auto border-b border-slate-100 bg-slate-50/50">
+              <PostPreview
+                post={post}
+                likeCount={likeCount}
+                commentCount={commentCount}
+                shareCount={shareCount}
+                liked={liked}
+                liking={liking}
+                onLike={() => void handleLike()}
+                onShare={() => void handleShare()}
+              />
+              {(actionError || notice) && (
+                <div className="px-4 pb-2">
+                  {actionError ? (
+                    <p
+                      role="alert"
+                      className="text-[11px] font-medium text-red-600"
+                    >
+                      {actionError}
+                    </p>
+                  ) : (
+                    <p
+                      role="status"
+                      className="text-[11px] font-medium text-emerald-600"
+                    >
+                      {notice}
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
-          </form>
+
+            <DialogHeader className="border-b border-slate-100 px-5 py-4 pr-14">
+              <DialogTitle>Comments</DialogTitle>
+              <DialogDescription>
+                {commentCount} {commentCount === 1 ? "comment" : "comments"} on
+                this post
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-5 py-3">
+                {commentsLoading && comments.length === 0 && (
+                  <p className="py-4 text-center text-xs text-slate-400">
+                    Loading comments…
+                  </p>
+                )}
+
+                {commentsError && (
+                  <div className="space-y-2 rounded-2xl bg-red-50 px-3 py-2 text-xs text-red-600">
+                    <p>{commentsError}</p>
+                    <button
+                      type="button"
+                      onClick={() => void loadComments(null, false)}
+                      className="font-semibold underline"
+                    >
+                      Retry
+                    </button>
+                  </div>
+                )}
+
+                {!commentsLoading && !commentsError && comments.length === 0 && (
+                  <p className="py-4 text-center text-xs text-slate-400">
+                    No comments yet. Be the first to comment.
+                  </p>
+                )}
+
+                {rootComments.map((comment) => (
+                  <div key={comment.id} className="space-y-2">
+                    <CommentItem comment={comment} onReply={setReplyTo} />
+                    {(repliesByParent.get(comment.id) ?? []).map((reply) => (
+                      <CommentItem
+                        key={reply.id}
+                        comment={reply}
+                        nested
+                        onReply={setReplyTo}
+                      />
+                    ))}
+                  </div>
+                ))}
+
+                {hasMoreComments && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => void loadComments(nextCursor, true)}
+                    disabled={commentsLoading}
+                    className="w-full rounded-full text-xs"
+                  >
+                    {commentsLoading ? "Loading…" : "Load more comments"}
+                  </Button>
+                )}
+              </div>
+
+              <form
+                onSubmit={handleSubmitComment}
+                className="space-y-2 border-t border-slate-100 px-5 py-3"
+              >
+                {replyTo && (
+                  <div className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2 text-[11px] text-slate-500">
+                    <span>
+                      Replying to{" "}
+                      <strong className="text-slate-800">
+                        {replyTo.author_display_name || replyTo.author_username}
+                      </strong>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setReplyTo(null)}
+                      aria-label="Cancel reply"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                )}
+                <Textarea
+                  value={commentText}
+                  onChange={(event) => setCommentText(event.target.value)}
+                  maxLength={1000}
+                  rows={2}
+                  placeholder="Write a comment…"
+                  className="resize-none rounded-2xl text-sm"
+                />
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[11px] text-slate-400">
+                    {currentUserId ? "" : "Log in to comment"}
+                  </span>
+                  <Button
+                    type="submit"
+                    disabled={submittingComment || commentText.trim().length === 0}
+                    className="gap-2 rounded-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60"
+                  >
+                    {submittingComment && (
+                      <Loader2 size={14} className="animate-spin" />
+                    )}
+                    Comment
+                  </Button>
+                </div>
+              </form>
+          </div>
         </DialogContent>
       </Dialog>
     </>

@@ -15,12 +15,14 @@ export const MIN_SEARCH_LENGTH = 2;
 export function useExploreSearch(opts?: {
   minLength?: number;
   limit?: number;
+  initialQuery?: string;
 }) {
   const minLength = opts?.minLength ?? MIN_SEARCH_LENGTH;
   const limit = opts?.limit ?? 8;
+  const initialQuery = opts?.initialQuery?.trim() ?? "";
 
-  const [query, setQueryValue] = useState("");
-  const [debouncedQuery, setDebouncedQuery] = useState("");
+  const [query, setQueryValue] = useState(initialQuery);
+  const [debouncedQuery, setDebouncedQuery] = useState(initialQuery);
   const [results, setResults] =
     useState<UnifiedSearchResults>(EMPTY_SEARCH_RESULTS);
   const [settledQuery, setSettledQuery] = useState("");

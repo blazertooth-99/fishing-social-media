@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { MoreHorizontal, Pencil } from "lucide-react";
 
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -23,12 +23,22 @@ import {
   resolveMediaUrl,
   type ApiPost,
 } from "@/lib/api/posts";
+import { getAvatarUrl } from "@/lib/api/media";
 
 interface MobileFishingPostProps {
   post: ApiPost;
   /** Viewer id — Edit option only shows when it matches the post author. */
   currentUserId?: string | null;
   onPostUpdated?: (post: ApiPost) => void;
+}
+
+function initials(name: string): string {
+  return name
+    .split(/[\s_-]+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("");
 }
 
 export default function MobileFishingPost({
@@ -38,6 +48,8 @@ export default function MobileFishingPost({
 }: MobileFishingPostProps) {
   const [editOpen, setEditOpen] = useState(false);
   const isOwner = Boolean(currentUserId) && currentUserId === post.author_id;
+  const authorName = post.author_display_name || post.author_username;
+  const avatarUrl = getAvatarUrl(post.author_avatar_media_id);
   const cover = post.media?.[0]
     ? resolveMediaUrl(post.media[0].thumbnail_url || post.media[0].display_url)
     : null;
@@ -53,10 +65,9 @@ export default function MobileFishingPost({
       <div className="flex items-center justify-between px-3 py-3">
         <div className="flex items-center gap-2">
           <Avatar className="h-9 w-9">
+            {avatarUrl && <AvatarImage src={avatarUrl} alt={authorName} />}
             <AvatarFallback className="bg-emerald-100 text-emerald-700">
-              {(post.author_display_name || post.author_username)
-                .slice(0, 2)
-                .toUpperCase()}
+              {initials(authorName)}
             </AvatarFallback>
           </Avatar>
 

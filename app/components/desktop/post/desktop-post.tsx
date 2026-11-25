@@ -13,15 +13,26 @@ import {
   Settings2,
 } from "lucide-react";
 
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 
 import PostFishingDetails from "@/app/components/shared/post/post-fishing-details";
 import PostMediaPicker from "@/app/components/shared/post/post-media-picker";
+import { useViewerProfile } from "@/app/components/shared/profile/use-viewer-profile";
+
+function initials(name: string): string {
+  return name
+    .split(/[\s_-]+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("");
+}
 
 export default function DesktopPost() {
   const containerRef = useRef<HTMLDivElement>(null);
+  const { displayName, avatarUrl } = useViewerProfile();
 
   useLayoutEffect(() => {
     const ctx = gsap.context(() => {
@@ -96,14 +107,15 @@ export default function DesktopPost() {
           <section className="post-content px-6 pt-6">
             <div className="flex gap-4">
               <Avatar className="h-11 w-11">
+                {avatarUrl && <AvatarImage src={avatarUrl} alt={displayName} />}
                 <AvatarFallback className="bg-emerald-600 text-white">
-                  CS
+                  {initials(displayName)}
                 </AvatarFallback>
               </Avatar>
 
               <div className="flex-1">
                 <div className="flex items-center gap-2">
-                  <span className="font-semibold">csatrio</span>
+                  <span className="font-semibold">{displayName}</span>
 
                   <span className="text-slate-400">›</span>
 
