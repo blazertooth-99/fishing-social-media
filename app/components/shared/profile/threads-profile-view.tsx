@@ -12,6 +12,8 @@ import {
   Settings,
   LogOut,
   Fish,
+  MessageCircle,
+  X,
 } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -37,9 +39,12 @@ import type { UserProfile } from "@/lib/api/profile";
 import { getAvatarUrl } from "@/lib/api/media";
 import {
   extractApiErrorMessage,
+  formatRelativeTime,
   getUserPosts,
+  getUserReplies,
   resolveMediaUrl,
   type ApiPost,
+  type UserReply,
 } from "@/lib/api/posts";
 import DesktopFishingPost from "@/app/components/desktop/desktop-fishing-post";
 import MobileFishingPost from "@/app/components/mobile/mobile-fishing-post";
@@ -61,6 +66,119 @@ interface ThreadsProfileViewProps {
   saving?: boolean;
   onUpdateProfile?: (data: ProfileUpdateData) => Promise<void>;
   isDesktop?: boolean;
+}
+
+function initialsFromName(name: string): string {
+  return (
+    name
+      .split(/[\s_-]+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0]?.toUpperCase() ?? "")
+      .join("") || "AN"
+  );
+}
+
+function ReplyThreadCard({
+  reply,
+  onOpen,
+}: {
+  reply: UserReply;
+  onOpen: () => void;
+}) {
+  const { post, comment } = reply;
+  const postAuthor =
+    post.author_display_name || post.author_username || "Angler";
+  const commentAuthor =
+    comment.author_display_name || comment.author_username || "Angler";
+  const postAvatar = getAvatarUrl(post.author_avatar_media_id);
+  const commentAvatar = getAvatarUrl(comment.author_avatar_media_id ?? null);
+  const media = (post.media ?? [])
+    .map((item) => resolveMediaUrl(item.thumbnail_url || item.display_url))
+    .filter((src): src is string => Boolean(src))
+    .slice(0, 2);
+
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      className="w-full overflow-hidden rounded-2xl border border-slate-200/80 bg-white text-left transition-colors hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700"
+    >
+      {/* RELATED POST */}
+      <div className="flex gap-3 p-4 pb-2">
+        <Avatar className="h-9 w-9 shrink-0">
+          {postAvatar && <AvatarImage src={postAvatar} alt={postAuthor} />}
+          <AvatarFallback className="bg-gradient-to-br from-emerald-500 to-cyan-500 text-[10px] font-bold text-white">
+            {initialsFromName(postAuthor)}
+          </AvatarFallback>
+        </Avatar>
+
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-1.5">
+            <p className="truncate text-sm font-semibold text-slate-900 dark:text-white">
+              {postAuthor}
+            </p>
+            <span className="shrink-0 text-[11px] text-slate-400">
+              {formatRelativeTime(post.created_at)}
+            </span>
+          </div>
+          {post.content && (
+            <p className="mt-1 line-clamp-3 whitespace-pre-wrap break-words text-xs leading-5 text-slate-700 dark:text-slate-300">
+              {post.content}
+            </p>
+          )}
+        </div>
+      </div>
+
+      {media.length > 0 && (
+        <div className="grid grid-cols-2 gap-2 px-4 pb-3 pl-16">
+          {media.map((src, index) => (
+            <div
+              key={`${post.id}-${index}`}
+              className="relative aspect-[4/3] overflow-hidden rounded-xl bg-slate-100 dark:bg-slate-800"
+            >
+              <Image
+                src={src}
+                alt={`Catch by ${postAuthor}`}
+                fill
+                sizes="(max-width: 768px) 30vw, 160px"
+                className="object-cover"
+                unoptimized
+              />
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* MY REPLY (threaded below the post) */}
+      <div className="relative flex gap-3 px-4 pb-4">
+        <span
+          aria-hidden
+          className="absolute left-[2.1rem] top-0 h-4 w-px -translate-y-full bg-slate-200 dark:bg-slate-700"
+        />
+        <Avatar className="h-8 w-8 shrink-0">
+          {commentAvatar && <AvatarImage src={commentAvatar} alt={commentAuthor} />}
+          <AvatarFallback className="bg-emerald-100 text-[10px] font-bold text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+            {initialsFromName(commentAuthor)}
+          </AvatarFallback>
+        </Avatar>
+
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-1.5">
+            <p className="truncate text-xs font-semibold text-slate-900 dark:text-white">
+              {commentAuthor}
+            </p>
+            <span className="shrink-0 text-[10px] text-slate-400">
+              {formatRelativeTime(comment.created_at)}
+            </span>
+          </div>
+          <p className="mt-1 whitespace-pre-wrap break-words text-xs leading-5 text-slate-700 dark:text-slate-300">
+            {comment.content}
+          </p>
+        </div>
+      </div>
+    </button>
+  );
 }
 
 export function ThreadsProfileView({
@@ -94,6 +212,40 @@ export function ThreadsProfileView({
   const [postsLoading, setPostsLoading] = useState(true);
   const [postsError, setPostsError] = useState<string | null>(null);
 
+  // Comments/replies written by this user, paired with their parent post.
+  const [userReplies, setUserReplies] = useState<UserReply[]>([]);
+  const [repliesLoading, setRepliesLoading] = useState(false);
+  const [repliesError, setRepliesError] = useState<string | null>(null);
+  const repliesLoadedRef = useRef(false);
+
+  // Profile search (filters posts, replies and media client-side).
+  const searchContainerRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
+
+  function closeSearch() {
+    setSearchOpen(false);
+    setSearchQuery("");
+  }
+
+  useEffect(() => {
+    if (!searchOpen) return;
+
+    searchInputRef.current?.focus();
+
+    function handlePointerDown(event: PointerEvent) {
+      if (searchContainerRef.current?.contains(event.target as Node)) return;
+      setSearchOpen(false);
+      setSearchQuery("");
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+    };
+  }, [searchOpen]);
+
   const loadUserPosts = React.useCallback(async () => {
     try {
       setPostsLoading(true);
@@ -107,6 +259,22 @@ export function ThreadsProfileView({
     }
   }, [profile.user_id]);
 
+  const loadUserReplies = React.useCallback(async () => {
+    if (repliesLoadedRef.current) return;
+    repliesLoadedRef.current = true;
+    try {
+      setRepliesLoading(true);
+      setRepliesError(null);
+      const mine = await getUserReplies(profile.user_id);
+      setUserReplies(mine);
+    } catch (err) {
+      repliesLoadedRef.current = false;
+      setRepliesError(extractApiErrorMessage(err, "Failed to load replies"));
+    } finally {
+      setRepliesLoading(false);
+    }
+  }, [profile.user_id]);
+
   useEffect(() => {
     async function init() {
       await loadUserPosts();
@@ -114,6 +282,12 @@ export function ThreadsProfileView({
 
     init();
   }, [loadUserPosts]);
+
+  useEffect(() => {
+    if (activeTab !== "replies") return;
+    if (repliesLoadedRef.current) return;
+    void loadUserReplies();
+  }, [activeTab, loadUserReplies]);
 
   // Edited post (PATCH + re-fetched detail) replaces the item in place.
   function handlePostUpdated(updated: ApiPost) {
@@ -152,6 +326,35 @@ export function ThreadsProfileView({
 
   const initials =
     profile.display_name?.trim().slice(0, 2).toUpperCase() || "AN";
+
+  const normalizedQuery = searchQuery.trim().toLowerCase();
+  const isSearching = normalizedQuery.length > 0;
+  const matchesQuery = (...values: Array<string | null | undefined>) =>
+    !isSearching ||
+    values.some((value) =>
+      (value ?? "").toLowerCase().includes(normalizedQuery),
+    );
+
+  const visiblePosts = userPosts.filter((post) =>
+    matchesQuery(post.content, post.author_display_name, post.author_username),
+  );
+  const visibleReplies = userReplies.filter(({ post, comment }) =>
+    matchesQuery(
+      comment.content,
+      post.content,
+      post.author_display_name,
+      post.author_username,
+    ),
+  );
+
+  function openReplyThread(reply: UserReply) {
+    const params = new URLSearchParams({
+      post: reply.post.id,
+      comment: reply.comment.id,
+      highlight: "1",
+    });
+    router.push(`/feed?${params.toString()}`);
+  }
 
   function openEditProfile() {
     setDisplayName(profile.display_name);
@@ -239,21 +442,63 @@ export function ThreadsProfileView({
           - Left: @username
           - Right: Search button + More Options (...)
       ======================================================== */}
-      <header className="flex items-center justify-between py-4 px-2 border-b border-slate-200/80 dark:border-slate-800">
-        <span className="text-base font-bold tracking-tight text-slate-900 dark:text-white">
+      <header className="flex items-center justify-between gap-3 py-4 px-2 border-b border-slate-200/80 dark:border-slate-800">
+        <span className="min-w-0 truncate text-base font-bold tracking-tight text-slate-900 dark:text-white">
           @{profile.username || "username"}
         </span>
 
-        <div className="flex items-center gap-2">
-          {/* SEARCH BUTTON */}
-          <button
-            type="button"
-            onClick={() => router.push("/explore")}
-            title="Cari"
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200/80 bg-white text-slate-700 transition-colors hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
-          >
-            <Search size={18} strokeWidth={2} />
-          </button>
+        <div className="flex shrink-0 items-center gap-2">
+          {/* EXPANDING SEARCH */}
+          <div ref={searchContainerRef} className="flex items-center">
+            <div
+              className={`relative overflow-hidden transition-all duration-300 ease-out ${
+                searchOpen
+                  ? "mr-2 w-40 opacity-100 sm:w-56"
+                  : "mr-0 w-0 opacity-0"
+              }`}
+            >
+              <Search
+                size={15}
+                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+              />
+              <Input
+                ref={searchInputRef}
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Escape") closeSearch();
+                }}
+                tabIndex={searchOpen ? 0 : -1}
+                placeholder="Search..."
+                aria-label="Search your posts and replies"
+                className="h-9 rounded-full border-slate-200 bg-slate-50 pl-8 pr-8 text-xs dark:border-slate-800 dark:bg-slate-900"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchQuery("");
+                    searchInputRef.current?.focus();
+                  }}
+                  aria-label="Clear search"
+                  className="absolute right-2 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full text-slate-400 transition-colors hover:bg-slate-200 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-300"
+                >
+                  <X size={12} />
+                </button>
+              )}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => (searchOpen ? closeSearch() : setSearchOpen(true))}
+              title={searchOpen ? "Close search" : "Search profile"}
+              aria-label={searchOpen ? "Close search" : "Search profile"}
+              aria-expanded={searchOpen}
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200/80 bg-white text-slate-700 transition-colors hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
+            >
+              <Search size={18} strokeWidth={2} />
+            </button>
+          </div>
 
           {/* MORE OPTIONS DROPDOWN (...) */}
           <DropdownMenu>
@@ -461,18 +706,73 @@ export function ThreadsProfileView({
       </section>
 
       {/* ========================================================
-          5. COMPOSER (same CreatePost flow as /feed — caption +
-             photos + GPS; fresh post is prepended above)
+          5. COMPOSER — only on the Posts tab (not Replies/Media)
       ======================================================== */}
-      <section className="py-4 border-b border-slate-200/80 dark:border-slate-800">
-        <CreatePost onPostCreated={handlePostCreated} />
-      </section>
+      {activeTab === "post" && (
+        <section className="py-4 border-b border-slate-200/80 dark:border-slate-800">
+          <CreatePost onPostCreated={handlePostCreated} />
+        </section>
+      )}
 
       {/* ========================================================
           6. POSTS / REPLIES / MEDIA TABS (real API data)
       ======================================================== */}
       <section className="py-6">
-        {postsLoading ? (
+        {activeTab === "replies" ? (
+          repliesLoading ? (
+            <div className="space-y-4">
+              {Array.from({ length: 2 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="animate-pulse rounded-2xl border border-slate-200/80 bg-white p-4 dark:border-slate-800 dark:bg-slate-900"
+                >
+                  <div className="h-3 w-1/3 rounded bg-slate-200 dark:bg-slate-700" />
+                  <div className="mt-3 h-3 w-3/4 rounded bg-slate-100 dark:bg-slate-800" />
+                  <div className="mt-4 h-3 w-1/2 rounded bg-slate-200 dark:bg-slate-700" />
+                  <div className="mt-3 h-3 w-2/3 rounded bg-slate-100 dark:bg-slate-800" />
+                </div>
+              ))}
+            </div>
+          ) : repliesError ? (
+            <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-center text-xs text-red-600 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
+              <p>{repliesError}</p>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={loadUserReplies}
+                className="mt-2 rounded-full"
+              >
+                Try again
+              </Button>
+            </div>
+          ) : visibleReplies.length > 0 ? (
+            <div className="space-y-4">
+              {visibleReplies.map((reply) => (
+                <ReplyThreadCard
+                  key={`${reply.post.id}-${reply.comment.id}`}
+                  reply={reply}
+                  onOpen={() => openReplyThread(reply)}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <MessageCircle
+                size={32}
+                className="mb-3 text-slate-300 dark:text-slate-600"
+              />
+              <p className="text-xl sm:text-2xl font-normal text-slate-400 dark:text-slate-500 select-none">
+                {isSearching ? "No matching replies" : "No replies yet"}
+              </p>
+              {!isSearching && (
+                <p className="mt-2 text-xs text-slate-400">
+                  Comments you write on posts will appear here.
+                </p>
+              )}
+            </div>
+          )
+        ) : postsLoading ? (
           <div className="space-y-4">
             {Array.from({ length: 2 }).map((_, i) => (
               <div
@@ -498,9 +798,9 @@ export function ThreadsProfileView({
             </Button>
           </div>
         ) : activeTab === "post" ? (
-          userPosts.length > 0 ? (
+          visiblePosts.length > 0 ? (
             <div className="space-y-4">
-              {userPosts.map((post) =>
+              {visiblePosts.map((post) =>
                 isDesktop ? (
                   <DesktopFishingPost
                     key={post.id}
@@ -525,23 +825,25 @@ export function ThreadsProfileView({
                 className="mb-3 text-slate-300 dark:text-slate-600"
               />
               <p className="text-xl sm:text-2xl font-normal text-slate-400 dark:text-slate-500 select-none">
-                No posts yet
+                {isSearching ? "No matching posts" : "No posts yet"}
               </p>
-              <p className="mt-2 text-xs text-slate-400">
-                Posts you share from the Home feed will appear here.
-              </p>
+              {!isSearching && (
+                <p className="mt-2 text-xs text-slate-400">
+                  Posts you share from the Home feed will appear here.
+                </p>
+              )}
             </div>
           )
         ) : activeTab === "media" ? (
           (() => {
-            const withMedia = userPosts.filter(
+            const withMedia = visiblePosts.filter(
               (p) => (p.media?.length ?? 0) > 0,
             );
             if (withMedia.length === 0) {
               return (
                 <div className="flex flex-col items-center justify-center py-20 text-center">
                   <p className="text-xl sm:text-2xl font-normal text-slate-400 dark:text-slate-500 select-none">
-                    No media yet
+                    {isSearching ? "No matching media" : "No media yet"}
                   </p>
                 </div>
               );
@@ -574,13 +876,7 @@ export function ThreadsProfileView({
               </div>
             );
           })()
-        ) : (
-          <div className="flex flex-col items-center justify-center py-20 text-center">
-            <p className="text-xl sm:text-2xl font-normal text-slate-400 dark:text-slate-500 select-none">
-              No replies yet
-            </p>
-          </div>
-        )}
+        ) : null}
       </section>
 
       {/* ========================================================

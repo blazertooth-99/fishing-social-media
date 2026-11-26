@@ -13,6 +13,7 @@ import {
 
 import { formatRelativeTime } from "@/lib/api/posts";
 import {
+  getNotificationCommentId,
   getNotificationHref,
   getNotificationPostId,
   type ApiNotification,
@@ -113,9 +114,14 @@ export function NotificationRow({
   function handleClick() {
     onMarkAsRead(notification.id);
     const eventType = notification.event_type.toUpperCase();
+    const targetsPost =
+      getNotificationPostId(notification) ||
+      getNotificationCommentId(notification);
     if (
-      (eventType === "LIKE" || eventType === "COMMENT") &&
-      getNotificationPostId(notification)
+      (eventType === "LIKE" ||
+        eventType === "COMMENT" ||
+        eventType === "REPLY") &&
+      targetsPost
     ) {
       router.push(getNotificationHref(notification));
       return;

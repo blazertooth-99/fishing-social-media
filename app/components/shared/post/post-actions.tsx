@@ -280,7 +280,7 @@ export default function PostActions({
   const [highlightedCommentId, setHighlightedCommentId] = useState<
     string | null
   >(null);
-  const deepLinkLoadedRef = useRef<string | null>(null);
+  const handledFocusRef = useRef<string | null>(null);
 
   const propKey = `${post.like_count ?? 0}|${post.is_liked ? "1" : "0"}|${
     post.comment_count ?? 0
@@ -397,8 +397,11 @@ export default function PostActions({
 
   const openCommentsFor = useCallback(
     (focus?: { commentId: string | null; highlight: boolean } | null) => {
-      if (deepLinkLoadedRef.current === post.id) return;
-      deepLinkLoadedRef.current = post.id;
+      const focusKey = `${post.id}:${focus?.commentId ?? "recent"}:${
+        focus?.highlight ? "1" : "0"
+      }`;
+      if (handledFocusRef.current === focusKey) return;
+      handledFocusRef.current = focusKey;
       setCommentsOpen(true);
       setReplyTo(null);
       setCommentText("");
@@ -412,7 +415,18 @@ export default function PostActions({
   );
 
   useEffect(() => {
-    if (!allowAutoOpen || !openComments) return;
+    if (!allowAutoOpen) return;
+    // A pending focus comes from the notification deep-link and carries the
+    // comment that was actually resolved, so prefer it over the URL params.
+    const pending = takePendingCommentFocus(post.id);
+    if (pending) {
+      openCommentsFor({
+        commentId: pending.commentId,
+        highlight: pending.highlight,
+      });
+      return;
+    }
+    if (!openComments) return;
     openCommentsFor({
       commentId: requestedCommentId,
       highlight: highlightRecentComment,
@@ -421,19 +435,10 @@ export default function PostActions({
     allowAutoOpen,
     openComments,
     openCommentsFor,
+    post.id,
     requestedCommentId,
     highlightRecentComment,
   ]);
-
-  useEffect(() => {
-    if (!allowAutoOpen) return;
-    const pending = takePendingCommentFocus(post.id);
-    if (!pending) return;
-    openCommentsFor({
-      commentId: pending.commentId,
-      highlight: pending.highlight,
-    });
-  }, [allowAutoOpen, post.id, openCommentsFor]);
 
   useEffect(() => {
     if (!highlightedCommentId) return;

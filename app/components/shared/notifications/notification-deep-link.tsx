@@ -6,6 +6,7 @@ import { Loader2 } from "lucide-react";
 
 import {
   broadcastNotificationsRead,
+  getNotificationCommentId,
   getNotificationPostId,
   listNotifications,
   markNotificationAsRead,
@@ -47,24 +48,36 @@ export default function NotificationDeepLink({
           const found = items.find((item) => item.id === id);
           if (found) {
             if (!target) target = getNotificationPostId(found);
-            if (!commentToOpen && found.event_type.toUpperCase() === "COMMENT") {
-              commentToOpen = found.entity_id || null;
+            if (!commentToOpen) {
+              const notificationComment = getNotificationCommentId(found);
+              if (notificationComment) {
+                commentToOpen = notificationComment;
+                shouldHighlight = true;
+              }
+            }
+            const eventType = found.event_type.toUpperCase();
+            if (eventType === "COMMENT" || eventType === "REPLY") {
               shouldHighlight = true;
             }
           }
         } catch {}
       }
 
+      // Never trust a candidate id until it resolves to a real post: for
+      // comment notifications the backend's `entity_id` is the comment id,
+      // not the post id, so an unvalidated target would keep the post hidden.
       const candidates = Array.from(
         new Set([target, commentToOpen].filter(Boolean) as string[]),
       );
+      let resolvedTarget: string | null = null;
       for (const candidate of candidates) {
         const post = await getPostById(candidate).catch(() => null);
         if (post?.id) {
-          target = post.id;
+          resolvedTarget = post.id;
           break;
         }
       }
+      target = resolvedTarget;
 
       if (!target && commentToOpen) {
         const resolved = await getCommentPostId(commentToOpen).catch(() => null);

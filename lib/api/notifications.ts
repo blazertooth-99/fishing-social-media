@@ -103,21 +103,66 @@ export async function markAllNotificationsAsRead(): Promise<number> {
   return res.data?.marked_count ?? 0;
 }
 
+function readStringField(
+  source: Record<string, unknown>,
+  keys: string[],
+): string | null {
+  for (const key of keys) {
+    const value = source[key];
+    if (typeof value === "string" && value) return value;
+  }
+  return null;
+}
+
+function isCommentEvent(eventType: string): boolean {
+  const normalized = eventType.toUpperCase();
+  return normalized === "COMMENT" || normalized === "REPLY";
+}
+
+/**
+ * Resolve the id of the POST a notification points at.
+ *
+ * The backend puts the affected entity in `entity_id`. For LIKE the entity is
+ * the post, but for COMMENT/REPLY the entity is the comment — so `entity_id`
+ * must NOT be treated as a post id for those events unless `entity_type`
+ * explicitly says POST.
+ */
 export function getNotificationPostId(
   notification: ApiNotification,
 ): string | null {
   const extra = notification as Record<string, unknown>;
-  for (const key of [
+  const explicit = readStringField(extra, [
     "post_id",
     "postId",
     "entity_post_id",
     "target_post_id",
-  ]) {
-    const value = extra[key];
-    if (typeof value === "string" && value) return value;
-  }
+  ]);
+  if (explicit) return explicit;
+
   const eventType = notification.event_type.toUpperCase();
-  if (eventType !== "LIKE" && eventType !== "COMMENT") return null;
+  const entityType = (notification.entity_type ?? "").toUpperCase();
+  if (eventType === "LIKE" || entityType === "POST") {
+    return notification.entity_id || null;
+  }
+  return null;
+}
+
+/** Resolve the id of the COMMENT a notification points at (if any). */
+export function getNotificationCommentId(
+  notification: ApiNotification,
+): string | null {
+  const extra = notification as Record<string, unknown>;
+  const explicit = readStringField(extra, [
+    "comment_id",
+    "commentId",
+    "entity_comment_id",
+    "target_comment_id",
+  ]);
+  if (explicit) return explicit;
+
+  if (!isCommentEvent(notification.event_type)) return null;
+  const entityType = (notification.entity_type ?? "").toUpperCase();
+  if (entityType === "POST") return null;
   return notification.entity_id || null;
 }
 
@@ -125,12 +170,11 @@ export function getNotificationHref(notification: ApiNotification): string {
   const base = `/notifications/${encodeURIComponent(notification.id)}`;
   const params = new URLSearchParams();
   const postId = getNotificationPostId(notification);
+  const commentId = getNotificationCommentId(notification);
   if (postId) params.set("post", postId);
+  if (commentId) params.set("comment", commentId);
 
-  if (notification.event_type.toUpperCase() === "COMMENT") {
-    if (notification.entity_id) {
-      params.set("comment", notification.entity_id);
-    }
+  if (isCommentEvent(notification.event_type)) {
     params.set("highlight", "1");
   }
 

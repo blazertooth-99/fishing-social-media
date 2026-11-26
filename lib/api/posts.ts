@@ -513,6 +513,70 @@ export async function getUserPosts(
   return mine;
 }
 
+export interface UserReply {
+  post: ApiPost;
+  comment: ApiComment;
+}
+
+/**
+ * Comments/replies written by a single user, paired with the post they belong
+ * to. There is no per-user comments endpoint yet, so this walks the feed and
+ * collects the author's comments from each post.
+ */
+export async function getUserReplies(
+  authorId: string,
+  opts?: {
+    limit?: number;
+    maxPages?: number;
+    commentsLimit?: number;
+    maxReplies?: number;
+  },
+): Promise<UserReply[]> {
+  const limit = opts?.limit ?? 20;
+  const maxPages = opts?.maxPages ?? 3;
+  const commentsLimit = opts?.commentsLimit ?? 50;
+  const maxReplies = opts?.maxReplies ?? 50;
+  const replies: UserReply[] = [];
+  const seenPosts = new Set<string>();
+  const seenComments = new Set<string>();
+  let cursor: string | null | undefined;
+
+  for (let page = 0; page < maxPages; page++) {
+    const { items, pagination } = await getFeed({ limit, cursor });
+    for (const post of items) {
+      if (seenPosts.has(post.id)) continue;
+      seenPosts.add(post.id);
+      if ((post.comment_count ?? 0) === 0) continue;
+
+      const { items: comments } = await listComments(post.id, {
+        limit: commentsLimit,
+      }).catch(() => ({ items: [] as ApiComment[] }));
+
+      for (const comment of comments) {
+        if (comment.author_id !== authorId) continue;
+        if (seenComments.has(comment.id)) continue;
+        seenComments.add(comment.id);
+        replies.push({ post, comment });
+      }
+
+      if (replies.length >= maxReplies) break;
+    }
+
+    if (replies.length >= maxReplies) break;
+    const next = pagination?.next_cursor ?? null;
+    const more = pagination?.has_more === true && Boolean(next);
+    if (!more) break;
+    cursor = next;
+  }
+
+  return replies
+    .sort(
+      (a, b) =>
+        Date.parse(b.comment.created_at) - Date.parse(a.comment.created_at),
+    )
+    .slice(0, maxReplies);
+}
+
 /** Resolve backend-relative media URLs ("/api/v1/media/...") to absolute. */
 export function resolveMediaUrl(url: string | null | undefined): string | null {
   if (!url) return null;
